@@ -2,28 +2,50 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#6D28D9">
+  <meta name="description" content="Poliglota: aprenda inglês, espanhol, francês, italiano e alemão jogando.">
   <title>Poliglota</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="bolhas" aria-hidden="true"><span></span><span></span><span></span></div>
 
   <header class="topo">
-    <div class="marca" id="marca">🌍 Poliglota</div>
-    <div class="status">
-      <span id="streak-box" title="Dias seguidos estudando">🔥 <b id="streak">0</b></span>
-      <span id="xp-box" title="Pontos de experiência">⭐ <b id="xp">0</b></span>
+    <div class="topo-interno">
+      <a class="marca" href="#inicio"><span class="marca-lumi" id="marcaLumi"></span><span class="marca-nome">Poliglota</span></a>
+      <nav class="nav" id="nav">
+        <a href="#inicio" data-r="inicio"><span class="nav-ic">🏠</span><b>Início</b></a>
+        <a href="#trilha" data-r="trilha"><span class="nav-ic">🗺️</span><b>Trilha</b></a>
+        <a href="#fliperama" data-r="fliperama"><span class="nav-ic">🕹️</span><b>Fliperama</b></a>
+        <a href="#loja" data-r="loja"><span class="nav-ic">🛍️</span><b>Loja</b></a>
+        <a href="#perfil" data-r="perfil"><span class="nav-ic">👤</span><b>Perfil</b></a>
+      </nav>
+      <div class="status">
+        <button class="pill pill-idioma" id="pillIdioma" title="Trocar idioma"></button>
+        <button class="pill" id="pillStreak" title="Ofensiva">🔥 <b id="streak">0</b></button>
+        <button class="pill" id="pillMoedas" title="Moedas">🪙 <b id="moedas">0</b></button>
+        <button class="pill" id="pillVidas" title="Vidas">❤️ <b id="vidas">5</b></button>
+      </div>
     </div>
+    <div class="faixa" aria-hidden="true"></div>
   </header>
 
   <main id="app"></main>
 
-  <footer class="rodape">Seu progresso fica salvo neste navegador. Dica: use as teclas 1 a 4 para responder.</footer>
+  <footer class="rodape">Poliglota · seu progresso fica salvo neste navegador</footer>
+  <div id="toasts" aria-live="polite"></div>
 
   <script src="data.js"></script>
+  <script src="js/util.js"></script>
+  <script src="js/estado.js"></script>
+  <script src="js/exercicios.js"></script>
+  <script src="js/fliperama.js"></script>
+  <script src="js/telas.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
