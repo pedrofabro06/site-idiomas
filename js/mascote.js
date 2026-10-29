@@ -71,7 +71,7 @@ function falarCompanheiro(texto, humor = "feliz") {
   $("span", b).textContent = texto;
   b.hidden = false;
   clearTimeout(timerCompanheiro);
-  timerCompanheiro = setTimeout(() => { b.hidden = true; $(".cp-bicho", c).innerHTML = lumi("feliz", "mini"); }, 6500);
+  timerCompanheiro = setTimeout(() => { b.hidden = true; $(".cp-bicho", c).innerHTML = lumi("feliz", "mini"); }, 5000);
 }
 // Sozinho, de vez em quando, o mascote se mexe (pula, acena) para mostrar que está ali
 setInterval(() => {
@@ -92,7 +92,7 @@ function companheiroNaRota(nome) {
   $(".cp-balao", $("#companheiro")).hidden = true;
   $(".cp-bicho", $("#companheiro")).innerHTML = lumi("feliz", "mini");
   const f = FALAS_DA_PAGINA[nome];
-  if (!f || !E.idioma || falouNaPagina[nome]) return;
+  if (nome !== "inicio" || !f || !E.idioma || falouNaPagina[nome]) return;
   falouNaPagina[nome] = true;
   setTimeout(() => { if (!document.body.classList.contains("em-licao")) falarCompanheiro(f()); }, 900);
 }

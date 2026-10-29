@@ -1686,3 +1686,26 @@ body.em-licao .companheiro, body.em-jogo .companheiro { display: none; }
 @keyframes mascote-acena { 20%, 60% { transform: rotate(-12deg); } 40%, 80% { transform: rotate(12deg); } }
 @keyframes mascote-gira { 50% { transform: translateY(-10px) rotate(180deg) scale(1.05); } 100% { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .cp-bicho, .cp-bicho.acena, .cp-bicho.gira, .cp-bicho.pula { animation: none; } }
+/* ---------- Proporções mais delicadas ---------- */
+img.em { width: 1.08em; height: 1.08em; vertical-align: -0.16em; }
+.nav-ic img.em { width: 1.15em; height: 1.15em; }
+.dica-mascote { gap: 8px; margin: 12px 0 2px; }
+.dm-bicho .lumi.mini { width: 46px; height: 50px; }
+.dm-balao { padding: 8px 12px; font-size: .92rem; border-radius: 16px; }
+.dm-balao > b { font-size: .72rem; }
+.cp-bicho .lumi.mini { width: 44px; height: 48px; }
+.cp-balao { max-width: 220px; font-size: .85rem; padding: 8px 26px 8px 11px; margin-bottom: 30px; }
+.card-jogo .cj-ic { font-size: 2.3rem; }
+.il-ic { width: 56px; height: 56px; font-size: 2rem; }
+.item-loja { grid-template-columns: 56px 1fr; }
+@media (max-width: 860px) {
+  .companheiro { right: 6px; bottom: calc(70px + env(safe-area-inset-bottom)); }
+  .cp-bicho .lumi.mini { width: 38px; height: 42px; }
+  .cp-balao { max-width: 190px; font-size: .8rem; margin-bottom: 24px; }
+  .dm-bicho .lumi.mini { width: 40px; height: 44px; }
+  .dm-balao { font-size: .86rem; }
+  .card-jogo .cj-ic { width: 54px; height: 54px; font-size: 1.9rem; border-radius: 16px; }
+  .card-jogo { grid-template-columns: 54px 1fr; }
+  .intro-emoji { font-size: 4.6rem; }
+}
+.item-loja .btn { padding: 8px 14px; font-size: .95rem; }
