@@ -339,6 +339,14 @@ function telaTrilha(modo = "trilha") {
         <button class="btn-vocab" data-vocab="${i}">📖 Palavras</button>
       </div>
       <div class="caminho">`;
+    // Unidade ainda bloqueada: mostra só uma linha compacta de cadeados, sem o caminho inteiro
+    if (!lib) {
+      html += `<button class="caminho-travado bloqueado" data-t="${i}" data-k="0">
+        <span class="ct-pontos">${NOS.map((no, k) => `<i class="tipo-${k}">${k === 3 ? "👑" : k === 4 ? "🎁" : "🔒"}</i>`).join("")}</span>
+        <small>Vença o desafio 👑 da unidade anterior para liberar</small>
+      </button></div></section>`;
+      return;
+    }
     NOS.forEach((no, k) => {
       let estado;
       if (!lib) estado = "bloqueado";
@@ -365,7 +373,7 @@ function telaTrilha(modo = "trilha") {
   $("#tNivel").onclick = () => iniciarNivelamento();
   $("#tTrocar").onclick = () => ir("idiomas");
   $$("[data-vocab]").forEach(b => b.onclick = () => modalVocabulario(TEMAS[+b.dataset.vocab]));
-  $$(".no").forEach(b => b.onclick = () => clicarNo(+b.dataset.t, +b.dataset.k, b));
+  $$(".no, .caminho-travado").forEach(b => b.onclick = () => clicarNo(+b.dataset.t, +b.dataset.k, b));
 
   // Rola até a fase atual (só na trilha principal)
   const atual = $(".no.atual");

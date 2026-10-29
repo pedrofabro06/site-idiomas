@@ -86,7 +86,7 @@ async function telaTutor() {
         ${lumi("feliz", "mini")}
         <div><b>${nomeMascote()} · tutor de ${idi.nome}</b><small>Nível ${nivelAtual()} · ${MODOS_TUTOR[ch.modo].desc}</small>
           ${CONFIG.contas ? `<small class="restante" id="tRestante">${logado() ? textoRestante("tutor") : "🔑 Entre na sua conta para conversar"}</small>` : ""}</div>
-        <button class="btn texto pequeno" id="tLimpar" title="Nova conversa">🗑️ Nova conversa</button>
+        <button class="btn texto pequeno" id="tLimpar" title="Nova conversa">🗑️ <span class="so-desktop">Nova conversa</span></button>
       </div>
       <div class="chips" id="tModos">${Object.entries(MODOS_TUTOR).map(([k, m]) => `<button class="chip ${ch.modo === k ? "on" : ""}" data-modo="${k}">${m.nome}</button>`).join("")}</div>
       ${ch.modo === "roleplay" ? `<div class="chips">${CENARIOS.map(c => `<button class="chip pequeno ${ch.cenario === c.id ? "on" : ""}" data-cen="${c.id}">${c.nome}</button>`).join("")}</div>` : ""}
