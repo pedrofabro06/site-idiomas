@@ -97,8 +97,18 @@ function som(tipo) {
 }
 
 // ---------- Voz (pronúncia) ----------
-function vozPara(lang) {
+// Todas as vozes instaladas para um idioma (as "Natural"/"Online" soam mais humanas)
+function vozesDoIdioma(idioma) {
+  if (!("speechSynthesis" in window)) return [];
+  const prefixo = IDIOMAS[idioma].voz.slice(0, 2);
+  return speechSynthesis.getVoices()
+    .filter(v => v.lang.replace("_", "-").toLowerCase().startsWith(prefixo))
+    .sort((a, b) => (/Natural|Online|Google/i.test(b.name) ? 1 : 0) - (/Natural|Online|Google/i.test(a.name) ? 1 : 0));
+}
+function vozPara(lang, idioma) {
   const vs = speechSynthesis.getVoices();
+  const escolhida = idioma && E.vozes && E.vozes[idioma];
+  if (escolhida) { const v = vs.find(x => x.name === escolhida); if (v) return v; }
   return vs.find(v => v.lang === lang && /Natural|Online|Google/i.test(v.name))
     || vs.find(v => v.lang === lang)
     || vs.find(v => v.lang.replace("_", "-").startsWith(lang.slice(0, 2)));
@@ -108,9 +118,9 @@ function falar(texto, lento = false, idioma = E.idioma) {
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(texto);
   u.lang = IDIOMAS[idioma].voz;
-  const v = vozPara(u.lang);
-  if (v) u.voice = v;
-  u.rate = lento ? 0.55 : 0.92;
+  const v = vozPara(u.lang, idioma);
+  if (v) { u.voice = v; u.lang = v.lang; }
+  u.rate = (lento ? 0.6 : 0.95) * (E.velocidade || 1);
   speechSynthesis.speak(u);
 }
 if ("speechSynthesis" in window) speechSynthesis.getVoices();
@@ -189,9 +199,56 @@ function aplicarTema(idioma = E.idioma) {
   if (meta) meta.content = t.c1;
 }
 
-// ---------- Lumi, a mascote que muda de cor com o idioma ----------
+// ---------- Mascotes: os dois mudam de cor com o idioma ----------
+const MASCOTES = {
+  kiko: { nome: "Kiko", desc: "o papagaio poliglota", apresentacao: "Oi! Eu sou o Kiko.<br>Papagaio que fala 5 idiomas!" },
+  lumi: { nome: "Lumi", desc: "a bolinha simpática", apresentacao: "Oi! Eu sou a Lumi.<br>Mudo de cor com o idioma!" },
+};
+const nomeMascote = () => (MASCOTES[E.mascote] || MASCOTES.kiko).nome;
 let lumiId = 0;
 function lumi(humor = "feliz", classe = "") {
+  return (typeof E !== "undefined" && E.mascote === "lumi") ? desenharLumi(humor, classe) : desenharKiko(humor, classe);
+}
+
+// Kiko: um papagaio com as cores da bandeira do idioma
+function desenharKiko(humor = "feliz", classe = "") {
+  const id = "kikoGrad" + (++lumiId);
+  const sobrancelhas = {
+    triste: '<path d="M30 42 Q42 38 53 45" class="kiko-traco"/><path d="M90 42 Q78 38 67 45" class="kiko-traco"/>',
+    uau: '<path d="M31 38 Q43 32 54 38" class="kiko-traco"/><path d="M89 38 Q77 32 66 38" class="kiko-traco"/>',
+    festa: "", feliz: "",
+  };
+  const bico = (humor === "festa" || humor === "uau")
+    ? `<path d="M50 72 Q60 ${humor === "festa" ? 96 : 88} 70 72 Z" fill="#7A1F2B"/><path d="M53 76 Q60 ${humor === "festa" ? 90 : 84} 67 76" fill="#FF6B81"/>
+       <path d="M47 64 Q60 54 73 64 Q67 74 60 76 Q53 74 47 64Z" class="kiko-bico"/>`
+    : `<path d="M47 64 Q60 54 73 64 Q68 80 60 86 Q52 80 47 64Z" class="kiko-bico"/>
+       <path d="M53 74 Q60 ${humor === "triste" ? 72 : 79} 67 74" class="kiko-boca"/>`;
+  return `<svg class="lumi kiko humor-${humor} ${classe}" viewBox="0 0 120 130" aria-hidden="true">
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" style="stop-color:var(--c1)"/><stop offset="1" style="stop-color:color-mix(in srgb, var(--c1) 72%, #000)"/>
+    </linearGradient></defs>
+    <ellipse cx="60" cy="125" rx="30" ry="4.5" class="lumi-sombra"/>
+    <g class="lumi-corpo">
+      <path d="M50 100 L41 127 L54 119 L60 129 L66 119 L79 127 L70 100Z" class="kiko-cauda"/>
+      <path d="M55 24 C47 7 34 6 28 13 C39 12 45 19 49 28Z" class="kiko-crista"/>
+      <path d="M62 22 C62 5 73 0 82 5 C73 8 69 15 67 26Z" class="kiko-crista"/>
+      <path d="M60 18 C90 18 106 44 104 72 C102 100 84 116 60 116 C36 116 18 100 16 72 C14 44 30 18 60 18Z" fill="url(#${id})"/>
+      <ellipse cx="60" cy="94" rx="25" ry="19" fill="#fff" opacity=".22"/>
+      <path d="M21 60 C6 74 8 98 27 108 C24 92 28 76 33 64Z" class="kiko-asa esq"/>
+      <path d="M99 60 C114 74 112 98 93 108 C96 92 92 76 87 64Z" class="kiko-asa dir"/>
+      <g class="lumi-olho"><ellipse cx="43" cy="55" rx="15" ry="14" fill="#fff"/><circle class="pupila" cx="44" cy="56" r="7" fill="#1b1530"/></g>
+      <g class="lumi-olho"><ellipse cx="77" cy="55" rx="15" ry="14" fill="#fff"/><circle class="pupila" cx="76" cy="56" r="7" fill="#1b1530"/></g>
+      <circle cx="47" cy="52" r="2.2" fill="#fff"/><circle cx="79" cy="52" r="2.2" fill="#fff"/>
+      ${sobrancelhas[humor] || ""}
+      <circle cx="27" cy="73" r="6" fill="#ff7aa8" opacity=".55"/><circle cx="93" cy="73" r="6" fill="#ff7aa8" opacity=".55"/>
+      ${bico}
+      <path d="M49 114 l-5 8 M49 114 l0 9 M49 114 l5 8 M71 114 l-5 8 M71 114 l0 9 M71 114 l5 8" class="kiko-pes"/>
+    </g>
+  </svg>`;
+}
+
+// Lumi: a bolinha da versão anterior (continua disponível no perfil)
+function desenharLumi(humor = "feliz", classe = "") {
   const id = "lumiGrad" + (++lumiId);
   const bocas = {
     feliz: '<path d="M46 80 Q60 93 74 80" class="lumi-boca"/>',

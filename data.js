@@ -230,6 +230,396 @@ const TEMAS = [
   },
 ];
 
+// ------------------------------------------------------------
+//  Unidades novas, organizadas pelos níveis do Quadro Europeu (CEFR)
+// ------------------------------------------------------------
+TEMAS.push(
+  // ===== A1 =====
+  {
+    id: "corpo", titulo: "Corpo", icone: "🖐️", desc: "As partes do corpo", imagens: true, nivel: "A1",
+    palavras: [
+      ["Olho", "Eye", "Ojo", "Œil", "Occhio", "Auge", "👁️"],
+      ["Orelha", "Ear", "Oreja", "Oreille", "Orecchio", "Ohr", "👂"],
+      ["Nariz", "Nose", "Nariz", "Nez", "Naso", "Nase", "👃"],
+      ["Boca", "Mouth", "Boca", "Bouche", "Bocca", "Mund", "👄"],
+      ["Mão", "Hand", "Mano", "Main", "Mano", "Hand", "✋"],
+      ["Pé", "Foot", "Pie", "Pied", "Piede", "Fuß", "🦶"],
+      ["Perna", "Leg", "Pierna", "Jambe", "Gamba", "Bein", "🦵"],
+      ["Braço", "Arm", "Brazo", "Bras", "Braccio", "Arm", "💪"],
+    ],
+    frases: [
+      ["Eu tenho dois olhos", "I have two eyes", "Tengo dos ojos", "J'ai deux yeux", "Ho due occhi", "Ich habe zwei Augen"],
+      ["Minha mão está fria", "My hand is cold", "Mi mano está fría", "Ma main est froide", "La mia mano è fredda", "Meine Hand ist kalt"],
+      ["Ele lava o rosto", "He washes his face", "Él se lava la cara", "Il se lave le visage", "Lui si lava la faccia", "Er wäscht sein Gesicht"],
+      ["Meu pé dói", "My foot hurts", "Me duele el pie", "J'ai mal au pied", "Mi fa male il piede", "Mein Fuß tut weh"],
+    ],
+  },
+  {
+    id: "roupas", titulo: "Roupas", icone: "👕", desc: "O que você veste", imagens: true, nivel: "A1",
+    palavras: [
+      ["Camisa", "Shirt", "Camisa", "Chemise", "Camicia", "Hemd", "👔"],
+      ["Camiseta", "T-shirt", "Camiseta", "T-shirt", "Maglietta", "T-Shirt", "👕"],
+      ["Calça", "Pants", "Pantalones", "Pantalon", "Pantaloni", "Hose", "👖"],
+      ["Vestido", "Dress", "Vestido", "Robe", "Vestito", "Kleid", "👗"],
+      ["Sapato", "Shoe", "Zapato", "Chaussure", "Scarpa", "Schuh", "👞"],
+      ["Chapéu", "Hat", "Sombrero", "Chapeau", "Cappello", "Hut", "🎩"],
+      ["Casaco", "Coat", "Abrigo", "Manteau", "Cappotto", "Mantel", "🧥"],
+      ["Meias", "Socks", "Calcetines", "Chaussettes", "Calzini", "Socken", "🧦"],
+    ],
+    frases: [
+      ["Eu uso um chapéu", "I wear a hat", "Llevo un sombrero", "Je porte un chapeau", "Porto un cappello", "Ich trage einen Hut"],
+      ["O vestido é bonito", "The dress is pretty", "El vestido es bonito", "La robe est jolie", "Il vestito è bello", "Das Kleid ist schön"],
+      ["Onde estão meus sapatos?", "Where are my shoes?", "¿Dónde están mis zapatos?", "Où sont mes chaussures ?", "Dove sono le mie scarpe?", "Wo sind meine Schuhe?"],
+      ["Está frio, use um casaco", "It is cold, wear a coat", "Hace frío, ponte un abrigo", "Il fait froid, mets un manteau", "Fa freddo, metti un cappotto", "Es ist kalt, zieh einen Mantel an"],
+    ],
+  },
+  {
+    id: "casa", titulo: "Casa", icone: "🏠", desc: "Cômodos e objetos de casa", imagens: true, nivel: "A1",
+    palavras: [
+      ["Casa", "House", "Casa", "Maison", "Casa", "Haus", "🏠"],
+      ["Porta", "Door", "Puerta", "Porte", "Porta", "Tür", "🚪"],
+      ["Janela", "Window", "Ventana", "Fenêtre", "Finestra", "Fenster", "🪟"],
+      ["Cama", "Bed", "Cama", "Lit", "Letto", "Bett", "🛏️"],
+      ["Cozinha", "Kitchen", "Cocina", "Cuisine", "Cucina", "Küche", "🍳"],
+      ["Cadeira", "Chair", "Silla", "Chaise", "Sedia", "Stuhl", "🪑"],
+      ["Banheiro", "Bathroom", "Baño", "Salle de bain", "Bagno", "Badezimmer", "🛁"],
+      ["Chave", "Key", "Llave", "Clé", "Chiave", "Schlüssel", "🔑"],
+    ],
+    frases: [
+      ["Minha casa é pequena", "My house is small", "Mi casa es pequeña", "Ma maison est petite", "La mia casa è piccola", "Mein Haus ist klein"],
+      ["Feche a porta, por favor", "Close the door, please", "Cierra la puerta, por favor", "Ferme la porte, s'il te plaît", "Chiudi la porta, per favore", "Mach bitte die Tür zu"],
+      ["A chave está na mesa", "The key is on the table", "La llave está en la mesa", "La clé est sur la table", "La chiave è sul tavolo", "Der Schlüssel liegt auf dem Tisch"],
+      ["Eu durmo no meu quarto", "I sleep in my room", "Duermo en mi habitación", "Je dors dans ma chambre", "Dormo nella mia camera", "Ich schlafe in meinem Zimmer"],
+    ],
+  },
+  {
+    id: "clima", titulo: "Clima", icone: "☀️", desc: "Fale sobre o tempo", imagens: true, nivel: "A1",
+    palavras: [
+      ["Sol", "Sun", "Sol", "Soleil", "Sole", "Sonne", "☀️"],
+      ["Chuva", "Rain", "Lluvia", "Pluie", "Pioggia", "Regen", "🌧️"],
+      ["Neve", "Snow", "Nieve", "Neige", "Neve", "Schnee", "❄️"],
+      ["Vento", "Wind", "Viento", "Vent", "Vento", "Wind", "💨"],
+      ["Nuvem", "Cloud", "Nube", "Nuage", "Nuvola", "Wolke", "☁️"],
+      ["Quente", "Hot", "Caliente", "Chaud", "Caldo", "Heiß", "🔥"],
+      ["Frio", "Cold", "Frío", "Froid", "Freddo", "Kalt", "🥶"],
+      ["Tempestade", "Storm", "Tormenta", "Tempête", "Tempesta", "Sturm", "⛈️"],
+    ],
+    frases: [
+      ["Hoje está fazendo sol", "It is sunny today", "Hoy hace sol", "Il y a du soleil aujourd'hui", "Oggi c'è il sole", "Heute scheint die Sonne"],
+      ["Está chovendo muito", "It is raining a lot", "Está lloviendo mucho", "Il pleut beaucoup", "Piove molto", "Es regnet viel"],
+      ["No inverno faz frio", "It is cold in winter", "En invierno hace frío", "En hiver, il fait froid", "In inverno fa freddo", "Im Winter ist es kalt"],
+      ["Amanhã vai nevar", "It will snow tomorrow", "Mañana va a nevar", "Il va neiger demain", "Domani nevicherà", "Morgen wird es schneien"],
+    ],
+  },
+
+  // ===== A2 =====
+  {
+    id: "dias", titulo: "Dias e horas", icone: "📅", desc: "Dias da semana e horários", imagens: false, nivel: "A2",
+    palavras: [
+      ["Segunda-feira", "Monday", "Lunes", "Lundi", "Lunedì", "Montag", "📅"],
+      ["Sexta-feira", "Friday", "Viernes", "Vendredi", "Venerdì", "Freitag", "🎉"],
+      ["Domingo", "Sunday", "Domingo", "Dimanche", "Domenica", "Sonntag", "☀️"],
+      ["Hoje", "Today", "Hoy", "Aujourd'hui", "Oggi", "Heute", "📍"],
+      ["Amanhã", "Tomorrow", "Mañana", "Demain", "Domani", "Morgen", "⏭️"],
+      ["Ontem", "Yesterday", "Ayer", "Hier", "Ieri", "Gestern", "⏮️"],
+      ["Semana", "Week", "Semana", "Semaine", "Settimana", "Woche", "🗓️"],
+      ["Hora", "Hour", "Hora", "Heure", "Ora", "Stunde", "⏰"],
+    ],
+    frases: [
+      ["Que horas são?", "What time is it?", "¿Qué hora es?", "Quelle heure est-il ?", "Che ore sono?", "Wie spät ist es?"],
+      ["Eu trabalho de segunda a sexta", "I work from Monday to Friday", "Trabajo de lunes a viernes", "Je travaille du lundi au vendredi", "Lavoro dal lunedì al venerdì", "Ich arbeite von Montag bis Freitag"],
+      ["Ontem eu fui ao cinema", "Yesterday I went to the cinema", "Ayer fui al cine", "Hier, je suis allé au cinéma", "Ieri sono andato al cinema", "Gestern bin ich ins Kino gegangen"],
+      ["Nos vemos na próxima semana", "See you next week", "Nos vemos la próxima semana", "À la semaine prochaine", "Ci vediamo la prossima settimana", "Wir sehen uns nächste Woche"],
+    ],
+  },
+  {
+    id: "cidade", titulo: "Cidade", icone: "🏙️", desc: "Lugares e direções", imagens: true, nivel: "A2",
+    palavras: [
+      ["Rua", "Street", "Calle", "Rue", "Strada", "Straße", "🛣️"],
+      ["Ônibus", "Bus", "Autobús", "Bus", "Autobus", "Bus", "🚌"],
+      ["Estação", "Station", "Estación", "Gare", "Stazione", "Bahnhof", "🚉"],
+      ["Hospital", "Hospital", "Hospital", "Hôpital", "Ospedale", "Krankenhaus", "🏥"],
+      ["Banco", "Bank", "Banco", "Banque", "Banca", "Bank", "🏦"],
+      ["Mercado", "Market", "Mercado", "Marché", "Mercato", "Markt", "🛒"],
+      ["Restaurante", "Restaurant", "Restaurante", "Restaurant", "Ristorante", "Restaurant", "🍴"],
+      ["Parque", "Park", "Parque", "Parc", "Parco", "Park", "🌳"],
+    ],
+    frases: [
+      ["Onde fica a estação?", "Where is the station?", "¿Dónde está la estación?", "Où est la gare ?", "Dov'è la stazione?", "Wo ist der Bahnhof?"],
+      ["Vire à direita na próxima rua", "Turn right at the next street", "Gira a la derecha en la próxima calle", "Tournez à droite dans la prochaine rue", "Gira a destra alla prossima strada", "Biegen Sie an der nächsten Straße rechts ab"],
+      ["O banco fica perto do parque", "The bank is near the park", "El banco está cerca del parque", "La banque est près du parc", "La banca è vicino al parco", "Die Bank ist in der Nähe des Parks"],
+      ["Eu pego o ônibus todo dia", "I take the bus every day", "Tomo el autobús todos los días", "Je prends le bus tous les jours", "Prendo l'autobus ogni giorno", "Ich nehme jeden Tag den Bus"],
+    ],
+  },
+  {
+    id: "compras", titulo: "Compras", icone: "🛍️", desc: "Preços, lojas e pagamentos", imagens: false, nivel: "A2",
+    palavras: [
+      ["Dinheiro", "Money", "Dinero", "Argent", "Soldi", "Geld", "💵"],
+      ["Preço", "Price", "Precio", "Prix", "Prezzo", "Preis", "🏷️"],
+      ["Barato", "Cheap", "Barato", "Bon marché", "Economico", "Billig", "👍"],
+      ["Caro", "Expensive", "Caro", "Cher", "Caro", "Teuer", "💸"],
+      ["Loja", "Shop", "Tienda", "Magasin", "Negozio", "Laden", "🏬"],
+      ["Comprar", "Buy", "Comprar", "Acheter", "Comprare", "Kaufen", "🛍️"],
+      ["Pagar", "Pay", "Pagar", "Payer", "Pagare", "Bezahlen", "💳"],
+      ["Tamanho", "Size", "Talla", "Taille", "Taglia", "Größe", "📏"],
+    ],
+    frases: [
+      ["Quanto custa isto?", "How much does this cost?", "¿Cuánto cuesta esto?", "Combien coûte ceci ?", "Quanto costa questo?", "Wie viel kostet das?"],
+      ["Posso pagar com cartão?", "Can I pay by card?", "¿Puedo pagar con tarjeta?", "Est-ce que je peux payer par carte ?", "Posso pagare con la carta?", "Kann ich mit Karte bezahlen?"],
+      ["Este casaco é muito caro", "This coat is very expensive", "Este abrigo es muy caro", "Ce manteau est très cher", "Questo cappotto è molto caro", "Dieser Mantel ist sehr teuer"],
+      ["Vocês têm um tamanho maior?", "Do you have a bigger size?", "¿Tienen una talla más grande?", "Vous avez une taille plus grande ?", "Avete una taglia più grande?", "Haben Sie eine größere Größe?"],
+    ],
+  },
+  {
+    id: "trabalho", titulo: "Trabalho", icone: "💼", desc: "Escritório e rotina profissional", imagens: false, nivel: "A2",
+    palavras: [
+      ["Trabalho", "Work", "Trabajo", "Travail", "Lavoro", "Arbeit", "💼"],
+      ["Escritório", "Office", "Oficina", "Bureau", "Ufficio", "Büro", "🏢"],
+      ["Chefe", "Boss", "Jefe", "Patron", "Capo", "Chef", "👔"],
+      ["Reunião", "Meeting", "Reunión", "Réunion", "Riunione", "Besprechung", "🤝"],
+      ["Salário", "Salary", "Salario", "Salaire", "Stipendio", "Gehalt", "💰"],
+      ["Colega", "Colleague", "Colega", "Collègue", "Collega", "Kollege", "👥"],
+      ["Computador", "Computer", "Ordenador", "Ordinateur", "Computer", "Computer", "💻"],
+      ["Contrato", "Contract", "Contrato", "Contrat", "Contratto", "Vertrag", "📄"],
+    ],
+    frases: [
+      ["Eu tenho uma reunião às dez", "I have a meeting at ten", "Tengo una reunión a las diez", "J'ai une réunion à dix heures", "Ho una riunione alle dieci", "Ich habe um zehn eine Besprechung"],
+      ["Meu chefe é muito simpático", "My boss is very nice", "Mi jefe es muy simpático", "Mon patron est très sympathique", "Il mio capo è molto simpatico", "Mein Chef ist sehr nett"],
+      ["Eu trabalho em um escritório", "I work in an office", "Trabajo en una oficina", "Je travaille dans un bureau", "Lavoro in un ufficio", "Ich arbeite in einem Büro"],
+      ["Ela procura um novo emprego", "She is looking for a new job", "Ella busca un nuevo trabajo", "Elle cherche un nouvel emploi", "Lei cerca un nuovo lavoro", "Sie sucht eine neue Stelle"],
+    ],
+  },
+  {
+    id: "saude", titulo: "Saúde", icone: "🩺", desc: "No médico e na farmácia", imagens: false, nivel: "A2",
+    palavras: [
+      ["Médico", "Doctor", "Médico", "Médecin", "Medico", "Arzt", "🧑‍⚕️"],
+      ["Remédio", "Medicine", "Medicamento", "Médicament", "Medicina", "Medikament", "💊"],
+      ["Dor", "Pain", "Dolor", "Douleur", "Dolore", "Schmerz", "🤕"],
+      ["Febre", "Fever", "Fiebre", "Fièvre", "Febbre", "Fieber", "🤒"],
+      ["Doente", "Sick", "Enfermo", "Malade", "Malato", "Krank", "🤧"],
+      ["Saudável", "Healthy", "Sano", "Sain", "Sano", "Gesund", "🥗"],
+      ["Farmácia", "Pharmacy", "Farmacia", "Pharmacie", "Farmacia", "Apotheke", "🏪"],
+      ["Cansado", "Tired", "Cansado", "Fatigué", "Stanco", "Müde", "😩"],
+    ],
+    frases: [
+      ["Eu preciso de um médico", "I need a doctor", "Necesito un médico", "J'ai besoin d'un médecin", "Ho bisogno di un medico", "Ich brauche einen Arzt"],
+      ["Estou com dor de cabeça", "I have a headache", "Me duele la cabeza", "J'ai mal à la tête", "Ho mal di testa", "Ich habe Kopfschmerzen"],
+      ["Ela está com febre", "She has a fever", "Ella tiene fiebre", "Elle a de la fièvre", "Lei ha la febbre", "Sie hat Fieber"],
+      ["Onde fica a farmácia mais próxima?", "Where is the nearest pharmacy?", "¿Dónde está la farmacia más cercana?", "Où est la pharmacie la plus proche ?", "Dov'è la farmacia più vicina?", "Wo ist die nächste Apotheke?"],
+    ],
+  },
+  {
+    id: "emocoes", titulo: "Emoções", icone: "😊", desc: "Como você se sente", imagens: true, nivel: "A2",
+    palavras: [
+      ["Feliz", "Happy", "Feliz", "Heureux", "Felice", "Glücklich", "😊"],
+      ["Triste", "Sad", "Triste", "Triste", "Triste", "Traurig", "😢"],
+      ["Bravo", "Angry", "Enfadado", "En colère", "Arrabbiato", "Wütend", "😠"],
+      ["Assustado", "Scared", "Asustado", "Effrayé", "Spaventato", "Ängstlich", "😨"],
+      ["Surpreso", "Surprised", "Sorprendido", "Surpris", "Sorpreso", "Überrascht", "😮"],
+      ["Calmo", "Calm", "Tranquilo", "Calme", "Calmo", "Ruhig", "😌"],
+      ["Nervoso", "Nervous", "Nervioso", "Nerveux", "Nervoso", "Nervös", "😬"],
+      ["Apaixonado", "In love", "Enamorado", "Amoureux", "Innamorato", "Verliebt", "😍"],
+    ],
+    frases: [
+      ["Eu estou muito feliz hoje", "I am very happy today", "Estoy muy feliz hoy", "Je suis très heureux aujourd'hui", "Oggi sono molto felice", "Ich bin heute sehr glücklich"],
+      ["Por que você está triste?", "Why are you sad?", "¿Por qué estás triste?", "Pourquoi es-tu triste ?", "Perché sei triste?", "Warum bist du traurig?"],
+      ["Ele fica nervoso antes das provas", "He gets nervous before exams", "Se pone nervioso antes de los exámenes", "Il est nerveux avant les examens", "Diventa nervoso prima degli esami", "Er wird vor Prüfungen nervös"],
+      ["Não fique bravo comigo", "Don't be angry with me", "No te enfades conmigo", "Ne sois pas en colère contre moi", "Non arrabbiarti con me", "Sei nicht wütend auf mich"],
+    ],
+  },
+
+  // ===== B1 =====
+  {
+    id: "natureza", titulo: "Natureza e ambiente", icone: "🌍", desc: "Paisagens e sustentabilidade", imagens: true, nivel: "B1",
+    palavras: [
+      ["Árvore", "Tree", "Árbol", "Arbre", "Albero", "Baum", "🌳"],
+      ["Rio", "River", "Río", "Rivière", "Fiume", "Fluss", "🏞️"],
+      ["Montanha", "Mountain", "Montaña", "Montagne", "Montagna", "Berg", "⛰️"],
+      ["Mar", "Sea", "Mar", "Mer", "Mare", "Meer", "🌊"],
+      ["Floresta", "Forest", "Bosque", "Forêt", "Foresta", "Wald", "🌲"],
+      ["Flor", "Flower", "Flor", "Fleur", "Fiore", "Blume", "🌼"],
+      ["Lixo", "Trash", "Basura", "Déchets", "Rifiuti", "Müll", "🗑️"],
+      ["Reciclar", "Recycle", "Reciclar", "Recycler", "Riciclare", "Recyceln", "♻️"],
+    ],
+    frases: [
+      ["Devemos proteger as florestas", "We must protect the forests", "Debemos proteger los bosques", "Nous devons protéger les forêts", "Dobbiamo proteggere le foreste", "Wir müssen die Wälder schützen"],
+      ["Eu sempre reciclo o lixo", "I always recycle the trash", "Siempre reciclo la basura", "Je recycle toujours les déchets", "Riciclo sempre i rifiuti", "Ich recycle immer den Müll"],
+      ["Subimos a montanha no verão passado", "We climbed the mountain last summer", "Subimos la montaña el verano pasado", "Nous avons escaladé la montagne l'été dernier", "Abbiamo scalato la montagna l'estate scorsa", "Wir sind letzten Sommer auf den Berg gestiegen"],
+      ["A poluição está aumentando nas cidades", "Pollution is increasing in cities", "La contaminación está aumentando en las ciudades", "La pollution augmente dans les villes", "L'inquinamento sta aumentando nelle città", "Die Umweltverschmutzung nimmt in den Städten zu"],
+    ],
+  },
+  {
+    id: "tecnologia", titulo: "Tecnologia", icone: "📱", desc: "Celular, apps e internet", imagens: true, nivel: "B1",
+    palavras: [
+      ["Celular", "Phone", "Móvil", "Portable", "Cellulare", "Handy", "📱"],
+      ["Senha", "Password", "Contraseña", "Mot de passe", "Password", "Passwort", "🔐"],
+      ["Tela", "Screen", "Pantalla", "Écran", "Schermo", "Bildschirm", "🖥️"],
+      ["Aplicativo", "App", "Aplicación", "Application", "Applicazione", "App", "📲"],
+      ["Baixar", "Download", "Descargar", "Télécharger", "Scaricare", "Herunterladen", "⬇️"],
+      ["Mensagem", "Message", "Mensaje", "Message", "Messaggio", "Nachricht", "💬"],
+      ["Bateria", "Battery", "Batería", "Batterie", "Batteria", "Akku", "🔋"],
+      ["Arquivo", "File", "Archivo", "Fichier", "File", "Datei", "📁"],
+    ],
+    frases: [
+      ["Esqueci minha senha", "I forgot my password", "Olvidé mi contraseña", "J'ai oublié mon mot de passe", "Ho dimenticato la mia password", "Ich habe mein Passwort vergessen"],
+      ["A bateria do meu celular acabou", "My phone battery died", "Se me acabó la batería del móvil", "La batterie de mon portable est vide", "La batteria del mio cellulare è scarica", "Der Akku meines Handys ist leer"],
+      ["Você pode me mandar uma mensagem?", "Can you send me a message?", "¿Puedes enviarme un mensaje?", "Tu peux m'envoyer un message ?", "Puoi mandarmi un messaggio?", "Kannst du mir eine Nachricht schicken?"],
+      ["Baixe o aplicativo no seu celular", "Download the app on your phone", "Descarga la aplicación en tu móvil", "Télécharge l'application sur ton portable", "Scarica l'applicazione sul tuo cellulare", "Lade die App auf dein Handy herunter"],
+    ],
+  },
+  {
+    id: "estudos", titulo: "Estudos", icone: "🎓", desc: "Escola, provas e aprendizado", imagens: false, nivel: "B1",
+    palavras: [
+      ["Escola", "School", "Escuela", "École", "Scuola", "Schule", "🏫"],
+      ["Professor", "Teacher", "Profesor", "Professeur", "Insegnante", "Lehrer", "🧑‍🏫"],
+      ["Aluno", "Student", "Alumno", "Élève", "Studente", "Schüler", "🧑‍🎓"],
+      ["Prova", "Exam", "Examen", "Examen", "Esame", "Prüfung", "📝"],
+      ["Aprender", "Learn", "Aprender", "Apprendre", "Imparare", "Lernen", "🧠"],
+      ["Livro", "Book", "Libro", "Livre", "Libro", "Buch", "📚"],
+      ["Universidade", "University", "Universidad", "Université", "Università", "Universität", "🎓"],
+      ["Lição de casa", "Homework", "Deberes", "Devoirs", "Compiti", "Hausaufgaben", "📓"],
+    ],
+    frases: [
+      ["Eu estudo inglês há dois anos", "I have been studying English for two years", "Estudio inglés desde hace dos años", "J'étudie l'anglais depuis deux ans", "Studio inglese da due anni", "Ich lerne seit zwei Jahren Englisch"],
+      ["A prova foi mais fácil do que eu esperava", "The exam was easier than I expected", "El examen fue más fácil de lo que esperaba", "L'examen était plus facile que prévu", "L'esame è stato più facile del previsto", "Die Prüfung war leichter als erwartet"],
+      ["Se eu tivesse tempo, faria um curso", "If I had time, I would take a course", "Si tuviera tiempo, haría un curso", "Si j'avais le temps, je suivrais un cours", "Se avessi tempo, farei un corso", "Wenn ich Zeit hätte, würde ich einen Kurs machen"],
+      ["Você já terminou a lição de casa?", "Have you finished your homework yet?", "¿Ya has terminado los deberes?", "Tu as déjà fini tes devoirs ?", "Hai già finito i compiti?", "Hast du die Hausaufgaben schon gemacht?"],
+    ],
+  },
+  {
+    id: "opinioes", titulo: "Opiniões e conectores", icone: "💭", desc: "Concorde, discorde e argumente", imagens: false, nivel: "B1",
+    palavras: [
+      ["Porque", "Because", "Porque", "Parce que", "Perché", "Weil", "🔗"],
+      ["Mas", "But", "Pero", "Mais", "Ma", "Aber", "↔️"],
+      ["Embora", "Although", "Aunque", "Bien que", "Anche se", "Obwohl", "🤔"],
+      ["Portanto", "Therefore", "Por lo tanto", "Donc", "Quindi", "Deshalb", "➡️"],
+      ["Acho que", "I think", "Creo que", "Je pense que", "Penso che", "Ich glaube", "💭"],
+      ["Concordar", "Agree", "Estar de acuerdo", "Être d'accord", "Essere d'accordo", "Zustimmen", "👍"],
+      ["Talvez", "Maybe", "Quizás", "Peut-être", "Forse", "Vielleicht", "🤷"],
+      ["Na verdade", "Actually", "En realidad", "En fait", "In realtà", "Eigentlich", "💡"],
+    ],
+    frases: [
+      ["Eu acho que você tem razão", "I think you are right", "Creo que tienes razón", "Je pense que tu as raison", "Penso che tu abbia ragione", "Ich glaube, du hast recht"],
+      ["Gosto de viajar, mas é caro", "I like to travel, but it is expensive", "Me gusta viajar, pero es caro", "J'aime voyager, mais c'est cher", "Mi piace viaggiare, ma è caro", "Ich reise gern, aber es ist teuer"],
+      ["Embora esteja chovendo, vamos sair", "Although it is raining, we are going out", "Aunque está lloviendo, vamos a salir", "Bien qu'il pleuve, nous allons sortir", "Anche se piove, usciamo", "Obwohl es regnet, gehen wir raus"],
+      ["Não concordo com essa ideia", "I don't agree with that idea", "No estoy de acuerdo con esa idea", "Je ne suis pas d'accord avec cette idée", "Non sono d'accordo con questa idea", "Ich stimme dieser Idee nicht zu"],
+    ],
+  },
+
+  // ===== B2 =====
+  {
+    id: "negocios", titulo: "Negócios", icone: "📈", desc: "Empresas, prazos e negociação", imagens: false, nivel: "B2",
+    palavras: [
+      ["Empresa", "Company", "Empresa", "Entreprise", "Azienda", "Unternehmen", "🏢"],
+      ["Cliente", "Customer", "Cliente", "Client", "Cliente", "Kunde", "🙋"],
+      ["Lucro", "Profit", "Beneficio", "Bénéfice", "Profitto", "Gewinn", "📈"],
+      ["Prazo", "Deadline", "Plazo", "Délai", "Scadenza", "Frist", "⏳"],
+      ["Negociar", "Negotiate", "Negociar", "Négocier", "Negoziare", "Verhandeln", "🤝"],
+      ["Investimento", "Investment", "Inversión", "Investissement", "Investimento", "Investition", "💹"],
+      ["Fornecedor", "Supplier", "Proveedor", "Fournisseur", "Fornitore", "Lieferant", "🚚"],
+      ["Orçamento", "Budget", "Presupuesto", "Budget", "Budget", "Budget", "🧾"],
+    ],
+    frases: [
+      ["Precisamos cumprir o prazo até sexta", "We need to meet the deadline by Friday", "Tenemos que cumplir el plazo antes del viernes", "Nous devons respecter le délai d'ici vendredi", "Dobbiamo rispettare la scadenza entro venerdì", "Wir müssen die Frist bis Freitag einhalten"],
+      ["A empresa aumentou seus lucros este ano", "The company increased its profits this year", "La empresa aumentó sus beneficios este año", "L'entreprise a augmenté ses bénéfices cette année", "L'azienda ha aumentato i suoi profitti quest'anno", "Das Unternehmen hat dieses Jahr seinen Gewinn gesteigert"],
+      ["Gostaria de agendar uma reunião com o cliente", "I would like to schedule a meeting with the client", "Me gustaría programar una reunión con el cliente", "Je voudrais organiser une réunion avec le client", "Vorrei fissare una riunione con il cliente", "Ich möchte einen Termin mit dem Kunden vereinbaren"],
+      ["O orçamento não permite novos investimentos", "The budget does not allow new investments", "El presupuesto no permite nuevas inversiones", "Le budget ne permet pas de nouveaux investissements", "Il budget non permette nuovi investimenti", "Das Budget erlaubt keine neuen Investitionen"],
+    ],
+  },
+  {
+    id: "ciencia", titulo: "Ciência", icone: "🔬", desc: "Pesquisa, descobertas e energia", imagens: true, nivel: "B2",
+    palavras: [
+      ["Pesquisa", "Research", "Investigación", "Recherche", "Ricerca", "Forschung", "🔬"],
+      ["Experimento", "Experiment", "Experimento", "Expérience", "Esperimento", "Experiment", "🧪"],
+      ["Descoberta", "Discovery", "Descubrimiento", "Découverte", "Scoperta", "Entdeckung", "💡"],
+      ["Planeta", "Planet", "Planeta", "Planète", "Pianeta", "Planet", "🪐"],
+      ["Energia", "Energy", "Energía", "Énergie", "Energia", "Energie", "⚡"],
+      ["Cientista", "Scientist", "Científico", "Scientifique", "Scienziato", "Wissenschaftler", "🧑‍🔬"],
+      ["Resultado", "Result", "Resultado", "Résultat", "Risultato", "Ergebnis", "📊"],
+      ["Teoria", "Theory", "Teoría", "Théorie", "Teoria", "Theorie", "📐"],
+    ],
+    frases: [
+      ["Os cientistas fizeram uma descoberta importante", "Scientists made an important discovery", "Los científicos hicieron un descubrimiento importante", "Les scientifiques ont fait une découverte importante", "Gli scienziati hanno fatto una scoperta importante", "Die Wissenschaftler haben eine wichtige Entdeckung gemacht"],
+      ["Os resultados da pesquisa foram surpreendentes", "The results of the research were surprising", "Los resultados de la investigación fueron sorprendentes", "Les résultats de la recherche ont été surprenants", "I risultati della ricerca sono stati sorprendenti", "Die Ergebnisse der Forschung waren überraschend"],
+      ["A energia solar é cada vez mais usada", "Solar energy is increasingly used", "La energía solar se usa cada vez más", "L'énergie solaire est de plus en plus utilisée", "L'energia solare è sempre più usata", "Solarenergie wird immer häufiger genutzt"],
+      ["Essa teoria ainda não foi comprovada", "This theory has not been proven yet", "Esta teoría todavía no ha sido demostrada", "Cette théorie n'a pas encore été prouvée", "Questa teoria non è ancora stata dimostrata", "Diese Theorie ist noch nicht bewiesen worden"],
+    ],
+  },
+  {
+    id: "sociedade", titulo: "Sociedade", icone: "🗳️", desc: "Leis, direitos e notícias", imagens: false, nivel: "B2",
+    palavras: [
+      ["Governo", "Government", "Gobierno", "Gouvernement", "Governo", "Regierung", "🏛️"],
+      ["Lei", "Law", "Ley", "Loi", "Legge", "Gesetz", "⚖️"],
+      ["Direitos", "Rights", "Derechos", "Droits", "Diritti", "Rechte", "📜"],
+      ["Eleição", "Election", "Elección", "Élection", "Elezione", "Wahl", "🗳️"],
+      ["Cidadão", "Citizen", "Ciudadano", "Citoyen", "Cittadino", "Bürger", "🧑"],
+      ["Desigualdade", "Inequality", "Desigualdad", "Inégalité", "Disuguaglianza", "Ungleichheit", "📉"],
+      ["Notícias", "News", "Noticias", "Actualités", "Notizie", "Nachrichten", "📰"],
+      ["Debate", "Debate", "Debate", "Débat", "Dibattito", "Debatte", "🎙️"],
+    ],
+    frases: [
+      ["Todos os cidadãos têm os mesmos direitos", "All citizens have the same rights", "Todos los ciudadanos tienen los mismos derechos", "Tous les citoyens ont les mêmes droits", "Tutti i cittadini hanno gli stessi diritti", "Alle Bürger haben die gleichen Rechte"],
+      ["O governo aprovou uma nova lei", "The government passed a new law", "El gobierno aprobó una nueva ley", "Le gouvernement a adopté une nouvelle loi", "Il governo ha approvato una nuova legge", "Die Regierung hat ein neues Gesetz verabschiedet"],
+      ["A desigualdade continua sendo um grande problema", "Inequality remains a big problem", "La desigualdad sigue siendo un gran problema", "L'inégalité reste un grand problème", "La disuguaglianza resta un grande problema", "Ungleichheit bleibt ein großes Problem"],
+      ["Eu leio as notícias todas as manhãs", "I read the news every morning", "Leo las noticias todas las mañanas", "Je lis les actualités tous les matins", "Leggo le notizie ogni mattina", "Ich lese jeden Morgen die Nachrichten"],
+    ],
+  },
+
+  // ===== C1 =====
+  {
+    id: "academico", titulo: "Vocabulário avançado", icone: "🧩", desc: "Palavras de textos acadêmicos e profissionais", imagens: false, nivel: "C1",
+    palavras: [
+      ["No entanto", "However", "Sin embargo", "Cependant", "Tuttavia", "Jedoch", "🔄"],
+      ["Alcançar", "Achieve", "Lograr", "Atteindre", "Raggiungere", "Erreichen", "🏆"],
+      ["Desenvolver", "Develop", "Desarrollar", "Développer", "Sviluppare", "Entwickeln", "🌱"],
+      ["Evidência", "Evidence", "Prueba", "Preuve", "Prova", "Beweis", "🔍"],
+      ["Abordagem", "Approach", "Enfoque", "Approche", "Approccio", "Ansatz", "🧭"],
+      ["Significativo", "Significant", "Significativo", "Significatif", "Significativo", "Bedeutend", "📌"],
+      ["Além disso", "Furthermore", "Además", "De plus", "Inoltre", "Außerdem", "➕"],
+      ["Desafio", "Challenge", "Desafío", "Défi", "Sfida", "Herausforderung", "🧗"],
+    ],
+    frases: [
+      ["No entanto, os dados sugerem o contrário", "However, the data suggest otherwise", "Sin embargo, los datos sugieren lo contrario", "Cependant, les données suggèrent le contraire", "Tuttavia, i dati suggeriscono il contrario", "Die Daten deuten jedoch auf das Gegenteil hin"],
+      ["Esse é um desafio significativo para a empresa", "This is a significant challenge for the company", "Este es un desafío significativo para la empresa", "C'est un défi important pour l'entreprise", "Questa è una sfida significativa per l'azienda", "Das ist eine bedeutende Herausforderung für das Unternehmen"],
+      ["Precisamos de uma abordagem diferente", "We need a different approach", "Necesitamos un enfoque diferente", "Nous avons besoin d'une approche différente", "Abbiamo bisogno di un approccio diverso", "Wir brauchen einen anderen Ansatz"],
+      ["Não há evidências suficientes para essa conclusão", "There is not enough evidence for that conclusion", "No hay pruebas suficientes para esa conclusión", "Il n'y a pas assez de preuves pour cette conclusion", "Non ci sono prove sufficienti per questa conclusione", "Es gibt nicht genug Beweise für diese Schlussfolgerung"],
+    ],
+  },
+  {
+    id: "expressoes", titulo: "Expressões idiomáticas", icone: "🗝️", desc: "Fale como um nativo", imagens: false, nivel: "C1",
+    palavras: [
+      ["Chover canivetes", "Rain cats and dogs", "Llover a cántaros", "Pleuvoir des cordes", "Piovere a catinelle", "In Strömen regnen", "🌧️"],
+      ["Custar os olhos da cara", "Cost an arm and a leg", "Costar un ojo de la cara", "Coûter les yeux de la tête", "Costare un occhio della testa", "Ein Vermögen kosten", "💸"],
+      ["Quebrar o gelo", "Break the ice", "Romper el hielo", "Briser la glace", "Rompere il ghiaccio", "Das Eis brechen", "🧊"],
+      ["Matar dois coelhos com uma cajadada só", "Kill two birds with one stone", "Matar dos pájaros de un tiro", "Faire d'une pierre deux coups", "Prendere due piccioni con una fava", "Zwei Fliegen mit einer Klappe schlagen", "🎯"],
+      ["Pisar na bola", "Drop the ball", "Meter la pata", "Faire une gaffe", "Fare una gaffe", "Mist bauen", "⚽"],
+      ["Estar nas nuvens", "Have your head in the clouds", "Estar en las nubes", "Être dans la lune", "Avere la testa tra le nuvole", "Mit dem Kopf in den Wolken sein", "☁️"],
+      ["Ficar de olho", "Keep an eye on", "Echar un ojo", "Garder un œil sur", "Tenere d'occhio", "Ein Auge auf etwas haben", "👀"],
+      ["Ir direto ao ponto", "Get to the point", "Ir al grano", "Aller droit au but", "Andare dritto al punto", "Auf den Punkt kommen", "📍"],
+    ],
+    frases: [
+      ["Vamos direto ao ponto", "Let's get to the point", "Vamos al grano", "Allons droit au but", "Andiamo dritti al punto", "Kommen wir auf den Punkt"],
+      ["Esse carro custou os olhos da cara", "That car cost an arm and a leg", "Ese coche costó un ojo de la cara", "Cette voiture a coûté les yeux de la tête", "Quella macchina è costata un occhio della testa", "Das Auto hat ein Vermögen gekostet"],
+      ["Ele contou uma piada para quebrar o gelo", "He told a joke to break the ice", "Contó un chiste para romper el hielo", "Il a raconté une blague pour briser la glace", "Ha raccontato una barzelletta per rompere il ghiaccio", "Er hat einen Witz erzählt, um das Eis zu brechen"],
+      ["Ela está sempre nas nuvens", "She always has her head in the clouds", "Ella siempre está en las nubes", "Elle est toujours dans la lune", "Ha sempre la testa tra le nuvole", "Sie ist immer mit dem Kopf in den Wolken"],
+    ],
+  },
+);
+
+// Níveis do Quadro Europeu Comum de Referência (CEFR)
+const NIVEIS = [
+  { id: "A1", nome: "Iniciante", desc: "Entende e usa expressões do dia a dia e frases bem simples." },
+  { id: "A2", nome: "Básico", desc: "Se comunica em situações de rotina: compras, trabalho, família e cidade." },
+  { id: "B1", nome: "Intermediário", desc: "Resolve a maioria das situações de viagem e dá opiniões simples." },
+  { id: "B2", nome: "Intermediário superior", desc: "Conversa com fluência razoável e entende textos mais complexos." },
+  { id: "C1", nome: "Avançado", desc: "Usa o idioma com flexibilidade no trabalho e nos estudos." },
+  { id: "C2", nome: "Proficiente", desc: "Compreende praticamente tudo e se expressa com precisão." },
+];
+const ORDEM_NIVEIS = NIVEIS.map(n => n.id);
+// As unidades originais são A1; a trilha fica ordenada do nível mais fácil ao mais difícil
+TEMAS.forEach((t, i) => { t.nivel = t.nivel || "A1"; t._ordem = i; });
+TEMAS.sort((a, b) => ORDEM_NIVEIS.indexOf(a.nivel) - ORDEM_NIVEIS.indexOf(b.nivel) || a._ordem - b._ordem);
+
 const AVATARES = [
   { e: "🦊", preco: 0 }, { e: "🐼", preco: 30 }, { e: "🐸", preco: 30 }, { e: "🐨", preco: 40 },
   { e: "🦁", preco: 60 }, { e: "🐙", preco: 60 }, { e: "🦄", preco: 100 }, { e: "🐲", preco: 150 },

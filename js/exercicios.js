@@ -84,13 +84,21 @@ function montarTreino() {
 }
 
 // ---------- Partida ----------
-function iniciarLicao({ tema = null, nivel = 0, treino = false } = {}) {
+function iniciarLicao({ tema = null, nivel = 0, treino = false, revisao = false, ia = false } = {}) {
   atualizarVidas();
-  if (!treino && E.vidas <= 0) return modalSemVidas();
-  const itens = treino ? montarTreino() : montarLicao(tema, nivel);
+  const semCusto = treino || revisao; // treino e revisão não gastam vidas
+  if (!semCusto && E.vidas <= 0) return modalSemVidas();
+  let itens;
+  if (revisao) {
+    itens = montarRevisao();
+    if (!itens.length) return toast("🧠", "Nada para revisar agora", "Volte mais tarde: as palavras reaparecem na hora certa.");
+  } else if (treino) itens = montarTreino();
+  else if (ia) itens = [...palavrasDoTema(tema).map(w => ({ tipo: "intro", w })), ...montarLicao(tema, 2)];
+  else itens = montarLicao(tema, nivel);
+  const destino = revisao || ia ? "praticar" : "trilha";
   const S = {
     itens, pos: 0, total: itens.filter(i => i.tipo !== "intro").length, concluidos: 0,
-    acertos: 0, erros: 0, combo: 0, comboMax: 0, inicio: Date.now(), treino, tema, nivel, estado: "verificar",
+    acertos: 0, erros: 0, combo: 0, comboMax: 0, inicio: Date.now(), treino, revisao, ia, semCusto, destino, tema, nivel, estado: "verificar",
   };
   document.body.classList.add("em-licao");
   render(`
@@ -99,7 +107,7 @@ function iniciarLicao({ tema = null, nivel = 0, treino = false } = {}) {
         <button class="fechar" id="sair" title="Sair (Esc)">✕</button>
         <div class="barra grossa"><div id="lbarra" style="width:0%"></div></div>
         <span class="combo-chip" id="lcombo"></span>
-        <span class="vidas-chip" id="lvidas">${treino ? "♾️" : "❤️ " + E.vidas}</span>
+        <span class="vidas-chip" id="lvidas">${semCusto ? "♾️" : "❤️ " + E.vidas}</span>
       </div>
       <div class="licao-corpo" id="lcorpo"></div>
     </div>
@@ -118,7 +126,7 @@ function iniciarLicao({ tema = null, nivel = 0, treino = false } = {}) {
   const sair = async () => {
     if (await confirmar("Sair da lição?", "Você vai perder o progresso desta lição.", "Sair", "Continuar estudando")) {
       window.speechSynthesis?.cancel();
-      ir("trilha");
+      ir(S.destino);
     }
   };
   $("#sair").onclick = sair;
@@ -133,7 +141,8 @@ function iniciarLicao({ tema = null, nivel = 0, treino = false } = {}) {
   function proximo() {
     if (S.pos >= S.itens.length) return fimLicao(S);
     const item = S.itens[S.pos];
-    if (item.tipo === "falar" && semMicrofone) item.tipo = "ditado";
+    // Sem microfone: frase vira ditado; palavra da revisão vira escrita
+    if (item.tipo === "falar" && semMicrofone) item.tipo = item.temas ? "ditado" : "escrever";
     S.estado = item.tipo === "intro" ? "neutro" : "verificar";
     corpo.innerHTML = "";
     corpo.classList.remove("travado");
@@ -178,10 +187,10 @@ function iniciarLicao({ tema = null, nivel = 0, treino = false } = {}) {
       S.acertos++; S.combo++; S.comboMax = Math.max(S.comboMax, S.combo); S.concluidos++;
       E.stats.acertos++;
       som("certo");
-      if (item.w) marcarAprendida(item.w.tema.id, item.w.i);
-      if (item.ws) item.ws.forEach(w => marcarAprendida(w.tema.id, w.i));
+      if (item.w && !item.w.tema.virtual) marcarAprendida(item.w.tema.id, item.w.i);
+      if (item.ws) item.ws.forEach(w => { if (!w.tema.virtual) marcarAprendida(w.tema.id, w.i); registrarRevisao(w, true); });
+      if (item.w) registrarRevisao(item.w, true);
       if (item.tipo === "escrever") contar("escrita");
-      if (item.tipo === "falar") contar("fala");
       rodape.className = "licao-rodape ok";
       fb.innerHTML = `<div class="fb-ic">${lumi("festa", "mini")}</div><div><b>${esc(umDe(elogios))}</b>
         ${aviso ? `<small>${aviso}</small>` : ""}${significado ? `<small>Significa: ${esc(significado)}</small>` : ""}</div>`;
@@ -191,7 +200,8 @@ function iniciarLicao({ tema = null, nivel = 0, treino = false } = {}) {
       E.stats.erros++;
       som("errado");
       tremer(corpo);
-      if (!S.treino) { perderVida(); $("#lvidas").textContent = "❤️ " + E.vidas; pular($("#lvidas")); }
+      if (item.w) registrarRevisao(item.w, false);
+      if (!S.semCusto) { perderVida(); $("#lvidas").textContent = "❤️ " + E.vidas; pular($("#lvidas")); }
       rodape.className = "licao-rodape erro";
       fb.innerHTML = `<div class="fb-ic">${lumi("triste", "mini")}</div><div><b>Resposta correta:</b>
         <span class="fb-correta">${esc(correta)}</span>${significado ? `<small>Significa: ${esc(significado)}</small>` : ""}</div>`;
@@ -199,7 +209,16 @@ function iniciarLicao({ tema = null, nivel = 0, treino = false } = {}) {
       if (!item.repetido && item.tipo !== "pares") S.itens.push(Object.assign({}, item, { repetido: true }));
       else S.concluidos++;
     }
-    if (falarTexto) falar(falarTexto);
+    if (falarTexto) {
+      falar(falarTexto);
+      // Depois de responder, dá para treinar a pronúncia da resposta certa
+      if (Reconhecimento && item.tipo !== "falar") {
+        const bp = el(`<button class="mini-btn fb-pron" type="button">🎤 Pronunciar</button>`);
+        bp.onclick = () => abrirPronuncia(falarTexto, item.w ? item.w.p[0] : item.f ? item.f[0] : "");
+        const alvoFb = $("div:last-child", fb);
+        if (alvoFb) alvoFb.appendChild(bp);
+      }
+    }
     btn.textContent = "Continuar";
     btn.disabled = false;
     btn.focus({ preventScroll: true });
@@ -210,7 +229,7 @@ function iniciarLicao({ tema = null, nivel = 0, treino = false } = {}) {
     if (S.estado === "neutro") { S.pos++; proximo(); return; }
     if (S.estado === "verificar") { if (!btn.disabled && ctx.verificar) responder(ctx.verificar()); return; }
     if (S.estado === "continuar") {
-      if (!S.treino && E.vidas <= 0) return modalSemVidas(true);
+      if (!S.semCusto && E.vidas <= 0) return modalSemVidas(true);
       S.pos++; proximo();
     }
   };
@@ -222,13 +241,15 @@ function fimLicao(S) {
   const tempo = Math.round((Date.now() - S.inicio) / 1000);
   const precisao = Math.round((S.acertos / Math.max(1, S.acertos + S.erros)) * 100);
   const perfeita = S.erros === 0;
-  const chefe = S.nivel === 3 && !S.treino;
-  let xp = S.treino ? 8 : (chefe ? 20 : 10) + (perfeita ? 5 : 0) + Math.floor(S.comboMax / 5) * 2;
-  let moedas = S.treino ? 3 : (perfeita ? 10 : 5) + (chefe ? 10 : 0);
+  const naTrilha = !S.treino && !S.revisao && !S.ia && TEMAS.includes(S.tema);
+  const chefe = S.nivel === 3 && naTrilha;
+  let xp = S.revisao ? Math.max(5, S.acertos * 2) : S.treino ? 8 : (chefe ? 20 : 10) + (perfeita ? 5 : 0) + Math.floor(S.comboMax / 5) * 2;
+  let moedas = S.revisao ? 5 : S.treino ? 3 : (perfeita ? 10 : 5) + (chefe ? 10 : 0);
   const estrelas = S.erros === 0 ? 3 : S.erros <= 2 ? 2 : 1;
 
   if (S.treino) ganharVidas(1);
-  else {
+  else if (S.ia) contar("licoes");
+  else if (naTrilha) {
     const p = progTema(S.tema.id);
     if (p.licao === S.nivel) p.licao++;
     p.estrelas[S.nivel] = Math.max(p.estrelas[S.nivel] || 0, estrelas);
@@ -242,12 +263,14 @@ function fimLicao(S) {
   confetes(perfeita ? 140 : 70);
 
   document.body.classList.remove("em-licao");
-  const titulo = S.treino ? "Treino concluído!" : chefe ? "Unidade dominada! 👑" : perfeita ? "Lição perfeita!" : "Lição concluída!";
+  const titulo = S.revisao ? "Revisão concluída! 🧠" : S.treino ? "Treino concluído!" : chefe ? "Unidade dominada! 👑" : perfeita ? "Lição perfeita!" : "Lição concluída!";
+  const rs = resumoSRS();
   render(`
     <div class="fim">
       ${lumi("festa", "grande pulando")}
       <h1><span class="destaque">${titulo}</span></h1>
-      ${S.treino ? `<p class="sub">Você recuperou 1 ❤️ e reforçou o que já aprendeu.</p>` :
+      ${S.revisao ? `<p class="sub">As palavras que você acertou só voltam daqui a alguns dias. As que errou voltam logo. ${rs.dominados} palavra${rs.dominados === 1 ? "" : "s"} já estão na memória de longo prazo.</p>` :
+        S.treino ? `<p class="sub">Você recuperou 1 ❤️ e reforçou o que já aprendeu.</p>` :
         `<div class="estrelas">${[1, 2, 3].map(n => `<span class="${n <= estrelas ? "on" : ""}" style="animation-delay:${n * 150}ms">★</span>`).join("")}</div>`}
       <div class="placar">
         <div class="placa amarela"><small>XP ganho</small><b>⚡ ${xp}</b></div>
@@ -259,9 +282,9 @@ function fimLicao(S) {
       ${chefe ? `<p class="sub">Um baú apareceu no fim da unidade. Vá abrir! 🎁</p>` : ""}
       <div class="acoes"><button class="btn grande" id="fimOk">Continuar</button></div>
     </div>`);
-  $("#fimOk").onclick = () => ir("trilha");
+  $("#fimOk").onclick = () => ir(S.destino);
   $("#fimOk").focus();
-  teclas = e => { if (e.key === "Enter") ir("trilha"); };
+  teclas = e => { if (e.key === "Enter") ir(S.destino); };
 }
 
 function modalSemVidas(naLicao = false) {
@@ -386,6 +409,7 @@ const TIPOS = {
     </div>`;
     const linha = $(".intro-palavra", area);
     linha.append(botaoSom(t), botaoSom(t, true));
+    if (Reconhecimento) linha.append(botaoPronunciar(t, w.p[0]));
     setTimeout(() => falar(t), 250);
   },
 
@@ -574,40 +598,18 @@ const TIPOS = {
   // Fale a frase no microfone
   falar(area, { f }, ctx) {
     const t = alvo(f);
-    area.innerHTML = `<h2 class="enunciado">Fale esta frase</h2>`;
-    balao(area, esc(t), t);
-    area.appendChild(el(`<p class="traducao-dica">“${esc(f[0])}”</p>`));
-    const mic = el(`<button class="mic" type="button"><span>🎤</span><b>Toque para falar</b></button>`);
-    const ouvido = el(`<p class="ouvido"></p>`);
-    area.append(mic, ouvido);
-    let dito = "";
-    mic.onclick = () => {
-      if (area.closest(".travado")) return;
-      const r = new Reconhecimento();
-      r.lang = IDIOMAS[E.idioma].voz;
-      r.interimResults = false;
-      r.maxAlternatives = 3;
-      mic.classList.add("ouvindo");
-      $("b", mic).textContent = "Ouvindo...";
-      r.onresult = e => {
-        const alts = [...e.results[0]].map(a => a.transcript);
-        dito = alts.reduce((m, a) => similaridade(normalizar(a), normalizar(t)) > similaridade(normalizar(m), normalizar(t)) ? a : m, alts[0]);
-        ouvido.textContent = "Você disse: “" + dito + "”";
-        ctx.pronto(true);
-      };
-      r.onerror = e => {
-        ouvido.textContent = e.error === "not-allowed" ? "O microfone foi bloqueado. Libere o acesso no navegador ou pule." : "Não consegui ouvir. Tente de novo.";
-      };
-      r.onend = () => { mic.classList.remove("ouvindo"); $("b", mic).textContent = "Toque para falar de novo"; };
-      try { r.start(); } catch { mic.classList.remove("ouvindo"); }
-    };
+    area.innerHTML = `<h2 class="enunciado">Fale em voz alta</h2>`;
+    let ultima = null;
+    // Mesmo avaliador do laboratório: nota de 0 a 100 e cor em cada palavra
+    area.appendChild(painelPronuncia(t, f[0], { aoAvaliar: r => { ultima = r; ctx.pronto(true); } }));
+    setTimeout(() => falar(t), 300);
     ctx.permitirPular("Não posso falar agora", () => {
       semMicrofone = true;
       ctx.pular();
     });
-    ctx.verificar = () => {
-      const s = similaridade(normalizar(dito), normalizar(t));
-      return { certo: s >= 0.7, correta: t, aviso: s < 1 ? `Ouvi: “${esc(dito)}”` : "", falarTexto: t };
-    };
+    ctx.verificar = () => ({
+      certo: ultima.nota >= 70, correta: t,
+      aviso: `Nota de pronúncia: <b>${ultima.nota}%</b>`, falarTexto: ultima.nota >= 70 ? "" : t,
+    });
   },
 };

@@ -5,6 +5,16 @@ const TELAS = {
   inicio: () => telaInicio(),
   idiomas: () => telaIdiomas(),
   trilha: () => telaTrilha(),
+  praticar: () => telaPraticar(),
+  revisao: () => {
+    if (cartoesVencidos().length) return iniciarLicao({ revisao: true });
+    telaPraticar();
+    toast("🧠", "Nada para revisar agora", "As palavras reaparecem na hora certa.");
+  },
+  pronuncia: () => telaPronuncia(),
+  tutor: () => telaTutor(),
+  licaoia: () => telaLicaoIA(),
+  metodo: () => telaMetodo(),
   fliperama: () => telaFliperama(),
   loja: () => telaLoja(),
   perfil: () => telaPerfil(),
@@ -20,9 +30,10 @@ function mostrarRota() {
   window.speechSynthesis?.cancel();
   garantirDia();
   aplicarTema();
-  if ((nome === "trilha" || nome === "fliperama") && !E.idioma) { telaIdiomas(); marcarNav("trilha"); return; }
+  const precisaIdioma = ["trilha", "fliperama", "praticar", "revisao", "pronuncia", "tutor", "licaoia"];
+  if (precisaIdioma.includes(nome) && !E.idioma) { telaIdiomas(); marcarNav("trilha"); return; }
   (TELAS[nome] || TELAS.inicio)();
-  marcarNav(nome);
+  marcarNav(["revisao", "pronuncia", "tutor", "licaoia", "metodo"].includes(nome) ? "praticar" : nome);
   atualizarTopo();
 }
 addEventListener("hashchange", mostrarRota);
@@ -50,6 +61,8 @@ function selecionarIdioma(cod) {
   som("pop");
   toast("🎨", `${IDIOMAS[cod].nome} selecionado`, `${IDIOMAS[cod].ola}! Tudo ganhou as cores da bandeira.`);
   ir("trilha");
+  // Primeira vez neste idioma: oferece o teste de nivelamento
+  if (!E.nivelamento[cod] && percentualIdioma(cod) === 0) setTimeout(() => oferecerNivelamento(cod), 350);
 }
 
 // ---------- Componentes ----------
@@ -138,18 +151,23 @@ function telaInicio() {
             : `<button class="btn grande" id="hComecar">Começar agora — é grátis</button>`}
         </div>
         ${idi ? `<div class="hero-mini">
-          <span>⚡ Nível <b>${nivel}</b></span><span>🔥 <b>${E.streak}</b> dia${E.streak === 1 ? "" : "s"}</span><span>📚 <b>${totalAprendidas()}</b> palavras</span>
-        </div>` : `<div class="hero-mini"><span>🗺️ 8 unidades</span><span>🧩 12 tipos de exercício</span><span>🕹️ 4 minijogos</span></div>`}
+          <span>📏 Estudando <b>${nivelAtual()}</b></span><span>⚡ Nível <b>${nivel}</b></span><span>🔥 <b>${E.streak}</b> dia${E.streak === 1 ? "" : "s"}</span><span>📚 <b>${totalAprendidas()}</b> palavras</span>
+        </div>` : `<div class="hero-mini"><span>🗺️ ${TEMAS.length} unidades do A1 ao C1</span><span>🧠 Repetição espaçada</span><span>🤖 Tutor com IA</span><span>🎤 Nota de pronúncia</span></div>`}
       </div>
       <div class="hero-palco">
         <div class="orbita">${Object.keys(IDIOMAS).map((c, i) => `<span class="orb" style="--i:${i}">${svgBandeira(c, "bandeira")}</span>`).join("")}</div>
         ${lumi("feliz", "grande flutua")}
-        <div class="balao-lumi">${idi ? esc(idi.vamos) : "Oi! Eu sou a Lumi.<br>Mudo de cor com o idioma!"}</div>
+        <div class="balao-lumi">${idi ? esc(idi.vamos) : MASCOTES[E.mascote]?.apresentacao || MASCOTES.kiko.apresentacao}</div>
       </div>
     </section>
 
     ${idi ? `
     <section class="painel">
+      ${(() => { const r = resumoSRS(); return `<div class="cartao-p revisao-card ${r.vencidos ? "tem" : ""}">
+        <div><h3>🧠 Revisão inteligente</h3>
+        <p class="sub">${r.vencidos ? `<b>${r.vencidos} palavra${r.vencidos > 1 ? "s" : ""}</b> no ponto certo de revisar. Revisar agora é o que fixa na memória.` : r.total ? `Nada para revisar agora. ${r.dominados} de ${r.total} palavras já estão na memória de longo prazo.` : "Conforme você acerta palavras, elas entram aqui e voltam na hora certa para você não esquecer."}</p></div>
+        <button class="btn ${r.vencidos ? "" : "secundario"}" id="hRevisar" ${r.vencidos ? "" : "disabled"}>${r.vencidos ? `Revisar ${r.vencidos}` : "Em dia ✔"}</button>
+      </div>`; })()}
       <div class="cartao-p meta">
         <h3>Meta diária</h3>
         ${anelMeta()}
@@ -183,15 +201,11 @@ function telaInicio() {
     </section>
 
     <section>
-      <div class="titulo-secao"><h2>Como funciona</h2></div>
-      <div class="grade-como">
-        <div class="como-card" style="--d:0"><span>🗺️</span><b>Trilha de fases</b><p>Cada unidade tem 3 lições, um desafio final valendo coroa e um baú de moedas.</p></div>
-        <div class="como-card" style="--d:1"><span>🧩</span><b>12 tipos de exercício</b><p>Imagens, pares, letras, montar frases, ditado, completar e até falar no microfone.</p></div>
-        <div class="como-card" style="--d:2"><span>❤️</span><b>Vidas e moedas</b><p>Errou, perde uma vida. Ganhe moedas e troque por vidas, protetores e avatares.</p></div>
-        <div class="como-card" style="--d:3"><span>🕹️</span><b>Fliperama</b><p>Minijogos rápidos como Chuva de Palavras e Relâmpago para bater recordes.</p></div>
-        <div class="como-card" style="--d:4"><span>🏅</span><b>Conquistas</b><p>Desafios diários, medalhas, nível e ofensiva para você voltar todo dia.</p></div>
-        <div class="como-card" style="--d:5"><span>🔊</span><b>Pronúncia nativa</b><p>Ouça cada palavra na voz do idioma, também em velocidade lenta.</p></div>
+      <div class="titulo-secao"><h2>O método Poliglota</h2><p class="sub">Não existe uma mágica única. O que a pesquisa mostra é que algumas técnicas funcionam muito melhor que as outras, e o Poliglota junta todas elas.</p></div>
+      <div class="grade-como">${PILARES.slice(0, 6).map((p, i) => `
+        <div class="como-card" style="--d:${i}"><span>${p.ic}</span><b>${p.nome}</b><p>${p.curto}</p></div>`).join("")}
       </div>
+      <div class="acoes"><a class="btn secundario" href="#metodo">Ver o método completo e a ciência por trás</a></div>
     </section>`);
 
   ligarCardsIdiomas();
@@ -203,6 +217,7 @@ function telaInicio() {
     };
     $("#hTrocar").onclick = () => ir("idiomas");
     $("#pdSom").onclick = () => falar(alvo(pw.p));
+    $("#hRevisar").onclick = () => iniciarLicao({ revisao: true });
   } else {
     $("#hComecar").onclick = () => $(".grade-idiomas").scrollIntoView({ behavior: "smooth", block: "center" });
   }
@@ -243,15 +258,29 @@ function telaTrilha() {
         <p class="sub">${percentualIdioma(E.idioma)}% concluído · ${totalAprendidas()} palavras aprendidas</p>
       </div>
       <div class="tt-acoes">
+        ${(() => { const v = resumoSRS().vencidos; return `<button class="btn ${v ? "" : "secundario"}" id="tRevisar">🧠 Revisar${v ? ` <span class="bolinha">${v}</span>` : ""}</button>`; })()}
         <button class="btn secundario" id="tTreinar">💪 Treinar <small>+1 ❤️</small></button>
+        <button class="btn secundario" id="tNivel">📏 ${E.nivelamento[E.idioma]?.nivel ? "Nível " + E.nivelamento[E.idioma].nivel + " · refazer teste" : "Teste de nível"}</button>
         <button class="btn secundario" id="tTrocar">Trocar idioma</button>
       </div>
     </section>`;
 
+  let nivelAnterior = null;
   TEMAS.forEach((t, i) => {
     const p = progTema(t.id);
     const lib = temaDesbloqueado(i);
     const lado = i % 2 ? -1 : 1;
+    if (t.nivel !== nivelAnterior) {
+      nivelAnterior = t.nivel;
+      const info = NIVEIS.find(n => n.id === t.nivel);
+      const temasNivel = TEMAS.filter(x => x.nivel === t.nivel);
+      const feitos = temasNivel.filter(x => progTema(x.id).licao >= 4).length;
+      html += `<div class="cabecalho-nivel" id="nivel-${t.nivel}">
+        <span class="selo-nivel pequeno">${t.nivel}</span>
+        <div><b>${info.nome}</b><small>${info.desc}</small></div>
+        <span class="cn-progresso">${feitos}/${temasNivel.length} unidades</span>
+      </div>`;
+    }
     html += `<section class="unidade ${lib ? "" : "bloqueada"}" id="u${i}">
       <div class="unidade-banner ${i % 2 ? "alt" : ""}">
         <div>
@@ -283,6 +312,8 @@ function telaTrilha() {
   render(html);
 
   $("#tTreinar").onclick = () => iniciarLicao({ treino: true });
+  $("#tRevisar").onclick = () => iniciarLicao({ revisao: true });
+  $("#tNivel").onclick = () => iniciarNivelamento();
   $("#tTrocar").onclick = () => ir("idiomas");
   $$("[data-vocab]").forEach(b => b.onclick = () => modalVocabulario(TEMAS[+b.dataset.vocab]));
   $$(".no").forEach(b => b.onclick = () => clicarNo(+b.dataset.t, +b.dataset.k, b));
@@ -352,21 +383,26 @@ function modalVocabulario(t) {
   const aprendidas = new Set(((E.aprendidas[E.idioma] || {})[t.id]) || []);
   const m = abrirModal(`
     <h2>${t.icone} ${t.titulo}</h2>
-    <p class="sub">Toque para ouvir. ✅ = palavra que você já acertou.</p>
+    <p class="sub">🔊 ouvir · 🎤 treinar a pronúncia · ✅ palavra que você já acertou.</p>
     <div class="vocab-lista">${t.palavras.map((p, i) => `
-      <button class="vocab-item" data-i="${i}">
+      <div class="vocab-item">
         <span class="vi-emoji">${p[6]}</span>
-        <span class="vi-txt"><b>${esc(alvo(p))}</b><small>${esc(p[0])}</small></span>
-        <span>${aprendidas.has(i) ? "✅" : "🔊"}</span>
-      </button>`).join("")}</div>
+        <span class="vi-txt"><b>${esc(alvo(p))} ${aprendidas.has(i) ? "✅" : ""}</b><small>${esc(p[0])}</small></span>
+        <button class="som-btn" data-i="${i}">🔊</button>
+        ${Reconhecimento ? `<button class="som-btn mic-btn" data-pi="${i}">🎤</button>` : ""}
+      </div>`).join("")}</div>
     <h3>Frases</h3>
     <div class="vocab-lista">${t.frases.map((f, i) => `
-      <button class="vocab-item frase" data-f="${i}">
-        <span class="vi-txt"><b>${esc(alvo(f))}</b><small>${esc(f[0])}</small></span><span>🔊</span>
-      </button>`).join("")}</div>
+      <div class="vocab-item frase">
+        <span class="vi-txt"><b>${esc(alvo(f))}</b><small>${esc(f[0])}</small></span>
+        <button class="som-btn" data-f="${i}">🔊</button>
+        ${Reconhecimento ? `<button class="som-btn mic-btn" data-pf="${i}">🎤</button>` : ""}
+      </div>`).join("")}</div>
     <div class="acoes"><button class="btn" data-fechar>Fechar</button></div>`, { classe: "larga" });
   $$("[data-i]", m.el).forEach(b => b.onclick = () => falar(alvo(t.palavras[+b.dataset.i])));
   $$("[data-f]", m.el).forEach(b => b.onclick = () => falar(alvo(t.frases[+b.dataset.f])));
+  $$("[data-pi]", m.el).forEach(b => b.onclick = () => { const p = t.palavras[+b.dataset.pi]; m.fechar(); abrirPronuncia(alvo(p), p[0]); });
+  $$("[data-pf]", m.el).forEach(b => b.onclick = () => { const f = t.frases[+b.dataset.pf]; m.fechar(); abrirPronuncia(alvo(f), f[0]); });
 }
 
 // ---------- Fliperama ----------
@@ -503,6 +539,15 @@ function telaPerfil() {
     <div class="cartao-p config">
       <div class="cfg-linha"><div><b>Meta diária</b><small>Quanto XP você quer ganhar por dia</small></div>
         <div class="segmentado" id="pMeta">${[10, 30, 50, 100].map(v => `<button class="${E.meta === v ? "on" : ""}" data-v="${v}">${v}</button>`).join("")}</div></div>
+      <div class="cfg-linha"><div><b>Mascote</b><small>Quem te acompanha nas lições</small></div>
+        <div class="escolha-mascote">${Object.entries(MASCOTES).map(([k, m]) => `
+          <button class="opcao-mascote ${E.mascote === k ? "on" : ""}" data-masc="${k}">${k === "lumi" ? desenharLumi("feliz", "mini") : desenharKiko("feliz", "mini")}<b>${m.nome}</b><small>${m.desc}</small></button>`).join("")}</div></div>
+      ${E.idioma ? `<div class="cfg-linha"><div><b>Voz do ${IDIOMAS[E.idioma].nome}</b><small>Escolha o sotaque e a velocidade da pronúncia</small></div>
+        <div class="cfg-voz">
+          <select class="campo pequeno" id="pVoz"></select>
+          <label class="vel">🐢 <input type="range" id="pVel" min="0.6" max="1.3" step="0.05" value="${E.velocidade || 1}"> 🐇</label>
+          <button class="btn secundario pequeno" id="pTestar">🔊 Testar</button>
+        </div></div>` : ""}
       <div class="cfg-linha"><div><b>Efeitos sonoros</b><small>Sons de acerto, erro e recompensas</small></div>
         <button class="interruptor ${E.som ? "on" : ""}" id="pSom" aria-label="Som"><span></span></button></div>
       <div class="cfg-linha"><div><b>Apagar progresso</b><small>Zera XP, moedas, trilhas e conquistas</small></div>
@@ -512,10 +557,116 @@ function telaPerfil() {
   $("#pNome").onchange = e => { E.nome = e.target.value.trim() || "Você"; salvar(); toast("✏️", "Nome salvo", E.nome); };
   $$("#pMeta button").forEach(b => b.onclick = () => { E.meta = +b.dataset.v; salvar(); telaPerfil(); });
   $("#pSom").onclick = () => { E.som = !E.som; salvar(); som("clique"); telaPerfil(); };
+  $$("[data-masc]").forEach(b => b.onclick = () => {
+    E.mascote = b.dataset.masc;
+    salvar();
+    $("#marcaLumi").innerHTML = lumi("feliz", "marca-svg");
+    toast("🐦", `${nomeMascote()} agora te acompanha!`, MASCOTES[E.mascote].desc);
+    telaPerfil();
+  });
+  if (E.idioma) {
+    const sel = $("#pVoz");
+    const preencher = () => {
+      const vozes = vozesDoIdioma(E.idioma);
+      const atual = E.vozes[E.idioma] || "";
+      sel.innerHTML = `<option value="">Automática (a melhor disponível)</option>` + vozes.map(v =>
+        `<option value="${esc(v.name)}" ${v.name === atual ? "selected" : ""}>${esc(v.name.replace(/^Microsoft |^Google /, ""))} · ${v.lang}${/Natural|Online/i.test(v.name) ? " ⭐" : ""}</option>`).join("");
+      if (!vozes.length) sel.innerHTML = `<option value="">Nenhuma voz deste idioma instalada no seu aparelho</option>`;
+    };
+    preencher();
+    if ("speechSynthesis" in window) speechSynthesis.onvoiceschanged = () => { if ($("#pVoz")) preencher(); };
+    sel.onchange = () => { E.vozes[E.idioma] = sel.value; salvar(); falar(IDIOMAS[E.idioma].ola + "! " + IDIOMAS[E.idioma].vamos); };
+    $("#pVel").oninput = e => { E.velocidade = +e.target.value; salvar(); };
+    $("#pVel").onchange = () => falar(IDIOMAS[E.idioma].ola + "! " + IDIOMAS[E.idioma].vamos);
+    $("#pTestar").onclick = () => falar(IDIOMAS[E.idioma].ola + "! " + IDIOMAS[E.idioma].vamos);
+  }
   $("#pReset").onclick = async () => {
     if (!(await confirmar("Apagar todo o progresso?", "Isso não pode ser desfeito.", "Apagar tudo"))) return;
     E = estadoPadrao();
     salvar();
     ir("inicio");
   };
+}
+
+// ---------- O método (com a ciência por trás) ----------
+const PILARES = [
+  { ic: "🧠", nome: "Repetição espaçada", curto: "Cada palavra volta para revisão logo antes de você esquecer. Acertou? O intervalo aumenta. Errou? Ela volta logo.",
+    longo: "Em 1885, Hermann Ebbinghaus mediu a curva do esquecimento: perdemos rápido o que acabamos de aprender. Revisar em intervalos cada vez maiores é uma das técnicas com mais evidência em toda a pesquisa sobre aprendizagem (Cepeda e colegas, 2006; Dunlosky e colegas, 2013). O Poliglota usa um algoritmo inspirado no SM-2, o mesmo princípio do Anki.",
+    onde: "Revisão inteligente", rota: "revisao" },
+  { ic: "🎯", nome: "Recordação ativa", curto: "Tentar lembrar fixa muito mais do que reler. Por isso você escreve, monta frases e fala, em vez de só reconhecer.",
+    longo: "É o efeito de teste (Roediger e Karpicke, 2006): quem se testou lembrou muito mais uma semana depois do que quem só releu o conteúdo. Conforme a palavra amadurece na revisão, os exercícios passam de reconhecer para produzir.",
+    onde: "Trilha e revisão", rota: "trilha" },
+  { ic: "📖", nome: "Input compreensível", curto: "Ler e ouvir conteúdo um pouco acima do seu nível é o que faz o idioma entrar. A IA escreve textos no seu nível sobre o que você gosta.",
+    longo: "Stephen Krashen chamou isso de i+1: material que você entende quase todo, com um pouco de novidade. Textos chatos ou difíceis demais não funcionam. Por isso as lições sob medida deixam você escolher o tema e o nível.",
+    onde: "Lição sob medida", rota: "licaoia" },
+  { ic: "📊", nome: "Frequência e nível certo", curto: "Começamos pelas palavras mais usadas e seguimos os níveis A1 a C1. O teste inicial evita perder tempo com o que você já sabe.",
+    longo: "As pesquisas de Paul Nation mostram que as cerca de 2.000 famílias de palavras mais frequentes cobrem por volta de 80% de um texto comum. A trilha segue o Quadro Europeu Comum de Referência (CEFR), o padrão usado em escolas e certificações no mundo todo.",
+    onde: "Teste de nível", rota: "nivel" },
+  { ic: "🗣️", nome: "Shadowing com nota", curto: "Ouça a voz nativa e repita na hora. O site mostra palavra por palavra o que saiu certo, para você corrigir na hora.",
+    longo: "Shadowing é uma técnica usada na formação de intérpretes: imitar ritmo, entonação e sons logo depois de ouvir. Com feedback imediato, você descobre quais palavras precisa treinar, em vez de repetir o erro sem perceber.",
+    onde: "Laboratório de pronúncia", rota: "pronuncia" },
+  { ic: "💬", nome: "Conversa de verdade", curto: "Falar e escrever obriga o cérebro a montar frases. O tutor com IA conversa no seu nível e corrige cada erro em português.",
+    longo: "A hipótese do output (Merrill Swain) mostra que produzir o idioma revela lacunas que só ouvir não revela. Correções explicadas no momento do erro, o chamado feedback corretivo, ajudam a não repetir o mesmo erro.",
+    onde: "Tutor com IA", rota: "tutor" },
+  { ic: "🔀", nome: "Pouco todo dia, misturado", curto: "15 minutos por dia valem mais do que 2 horas no fim de semana. Misturar tipos de exercício também fixa melhor.",
+    longo: "Prática distribuída e intercalação (interleaving) estão entre as técnicas de maior utilidade na revisão de Dunlosky e colegas (2013). É por isso que existem a meta diária, a ofensiva e lições que misturam vários tipos de exercício.",
+    onde: "Meta diária", rota: "inicio" },
+];
+
+function abrirPilar(rota) {
+  if (rota === "nivel") return iniciarNivelamento();
+  if (rota === "revisao") return iniciarLicao({ revisao: true });
+  ir(rota);
+}
+
+function telaMetodo() {
+  render(`
+    <section class="secao-topo">
+      <div><span class="selo">📘 O método</span>
+      <h1>Como aprender um idioma <span class="destaque">de verdade</span></h1>
+      <p class="sub">Não existe um único método mágico. Mas décadas de pesquisa sobre memória e aquisição de idiomas apontam técnicas que funcionam muito melhor do que estudar listas ou só assistir aulas. O Poliglota foi montado em cima delas.</p></div>
+      ${lumi("uau", "media flutua")}
+    </section>
+    <div class="pilares">${PILARES.map((p, i) => `
+      <article class="pilar" style="--d:${i}">
+        <span class="pilar-ic">${p.ic}</span>
+        <div><h3>${i + 1}. ${p.nome}</h3><p>${p.curto}</p><p class="sub">${p.longo}</p>
+        <button class="btn secundario pequeno" data-rota="${p.rota}">${p.onde} →</button></div>
+      </article>`).join("")}</div>
+    <h2>Sua rotina ideal de 20 minutos</h2>
+    <div class="rotina">
+      <div class="passo"><b>1</b><div><strong>Revisão inteligente</strong><small>5 min · as palavras que estão para ser esquecidas</small></div></div>
+      <div class="passo"><b>2</b><div><strong>Uma lição nova da trilha</strong><small>7 min · vocabulário e frases do seu nível</small></div></div>
+      <div class="passo"><b>3</b><div><strong>Shadowing</strong><small>3 min · ouvir, repetir e ver a nota</small></div></div>
+      <div class="passo"><b>4</b><div><strong>Conversa ou leitura com IA</strong><small>5 min · use o idioma de verdade</small></div></div>
+    </div>`);
+  $$("[data-rota]").forEach(b => b.onclick = () => abrirPilar(b.dataset.rota));
+}
+
+// ---------- Central de prática ----------
+async function telaPraticar() {
+  const r = resumoSRS();
+  const ia = await checarIA();
+  const nv = E.nivelamento[E.idioma]?.nivel;
+  const cards = [
+    { id: "revisao", ic: "🧠", nome: "Revisão inteligente", desc: r.vencidos ? `${r.vencidos} palavra${r.vencidos > 1 ? "s" : ""} para revisar agora` : r.total ? `Tudo em dia · ${r.dominados}/${r.total} na memória de longo prazo` : "Acerte palavras na trilha para começar", destaque: r.vencidos > 0, cor: ["#7C3AED", "#2563EB"] },
+    { id: "pronuncia", ic: "🎤", nome: "Laboratório de pronúncia", desc: "Fale e receba nota em cada palavra. Modo shadowing.", cor: ["#059669", "#0EA5E9"] },
+    { id: "tutor", ic: "💬", nome: `Tutor com IA`, desc: ia ? "Converse, tire dúvidas ou simule situações reais" : "Precisa ligar a IA no servidor", ia: true, cor: ["#DB2777", "#F59E0B"] },
+    { id: "licaoia", ic: "✨", nome: "Lição sob medida", desc: ia ? "Texto, vocabulário e exercícios sobre qualquer tema" : "Precisa ligar a IA no servidor", ia: true, cor: ["#EA580C", "#DC2626"] },
+    { id: "nivel", ic: "📏", nome: "Teste de nível", desc: nv ? `Seu resultado: ${nv}. Refaça quando quiser.` : "Descubra seu nível do A1 ao C1", cor: ["#0891B2", "#4F46E5"] },
+    { id: "metodo", ic: "📘", nome: "O método", desc: "As 7 técnicas com mais evidência científica", cor: ["#475569", "#0F172A"] },
+  ];
+  render(`
+    <section class="secao-topo">
+      <div><span class="selo">🎯 Praticar · ${IDIOMAS[E.idioma].nome} · estudando ${nivelAtual()}</span>
+      <h1>Treine do <span class="destaque">jeito certo</span></h1>
+      <p class="sub">Revisão na hora certa, pronúncia com nota, conversa e leitura no seu nível. Tudo o que a ciência diz que funciona.</p></div>
+      ${lumi("festa", "media flutua")}
+    </section>
+    <div class="grade-jogos">${cards.map((c, n) => `
+      <button class="card-jogo ${c.destaque ? "pulsando" : ""} ${c.ia && !ia ? "desligado" : ""}" data-p="${c.id}" style="--g1:${c.cor[0]};--g2:${c.cor[1]};animation-delay:${n * 70}ms">
+        <span class="cj-ic">${c.ic}</span><b>${c.nome}</b><p>${c.desc}</p>
+        <span class="cj-rodape"><span>${c.ia ? (ia ? "🤖 IA ligada" : "🔌 IA desligada") : ""}</span><span class="cj-play">Abrir ▶</span></span>
+      </button>`).join("")}</div>`);
+  $$("[data-p]").forEach(b => b.onclick = () => abrirPilar(b.dataset.p));
 }

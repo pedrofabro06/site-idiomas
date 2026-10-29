@@ -12,6 +12,14 @@ function estadoPadrao() {
     xp: 0, moedas: 50, vidas: VIDAS_MAX, vidasEm: Date.now(),
     streak: 0, ultimoDia: null, protetor: 0, meta: 30, som: true,
     idioma: null,
+    mascote: "kiko",   // kiko (papagaio) ou lumi
+    vozes: {},         // vozes[idioma] = nome da voz escolhida
+    velocidade: 1,     // velocidade da fala (0.6 a 1.3)
+    srs: {},           // srs[idioma][chave] = cartão de repetição espaçada
+    nivelamento: {},   // nivelamento[idioma] = { nivel, data }
+    pronuncia: {},     // pronuncia[idioma][texto] = melhor nota
+    licoesIA: {},      // licoesIA[idioma] = lições geradas pela IA
+    chat: {},          // chat[idioma] = { modo, cenario, msgs }
     prog: {},        // prog[idioma][tema] = { licao: 0..4, bau: bool, estrelas: [] }
     aprendidas: {},  // aprendidas[idioma][tema] = [índices]
     conquistas: {},
@@ -149,6 +157,19 @@ function progTema(temaId, idioma = E.idioma) {
   return E.prog[idioma][temaId];
 }
 const temaDesbloqueado = (i, idioma = E.idioma) => i === 0 || progTema(TEMAS[i - 1].id, idioma).licao >= 4;
+
+// Nível atual do aluno: o do teste ou o mais alto que ele já completou na trilha
+function nivelAtual(idioma = E.idioma) {
+  let idx = -1;
+  const teste = (E.nivelamento[idioma] || {}).nivel;
+  if (teste) idx = ORDEM_NIVEIS.indexOf(teste);
+  ORDEM_NIVEIS.forEach((n, i) => {
+    const temas = TEMAS.filter(t => t.nivel === n);
+    if (temas.length && temas.every(t => progTema(t.id, idioma).licao >= 4)) idx = Math.max(idx, i);
+  });
+  // O nível de estudo é o próximo ainda não dominado
+  return ORDEM_NIVEIS[Math.min(ORDEM_NIVEIS.length - 1, idx + 1)];
+}
 function marcarAprendida(temaId, idx) {
   const a = (E.aprendidas[E.idioma] = E.aprendidas[E.idioma] || {});
   const lista = new Set(a[temaId] || []);
