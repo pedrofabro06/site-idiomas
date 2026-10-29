@@ -606,6 +606,71 @@ TEMAS.push(
   },
 );
 
+// ------------------------------------------------------------
+//  Reforço do básico (A1): entram ao lado das unidades parecidas
+// ------------------------------------------------------------
+function inserirTema(posicao, referencia, tema) {
+  const i = TEMAS.findIndex(t => t.id === referencia);
+  TEMAS.splice(posicao === "antes" ? i : i + 1, 0, tema);
+}
+inserirTema("antes", "saudacoes", {
+  id: "essenciais", titulo: "Palavras essenciais", icone: "⭐", desc: "Sim, não, eu, você... o começo de tudo", imagens: false, nivel: "A1",
+  palavras: [
+    ["Sim", "Yes", "Sí", "Oui", "Sì", "Ja", "✅"],
+    ["Não", "No", "No", "Non", "No", "Nein", "❌"],
+    ["Eu", "I", "Yo", "Je", "Io", "Ich", "🙋"],
+    ["Você", "You", "Tú", "Tu", "Tu", "Du", "👉"],
+    ["Ele", "He", "Él", "Il", "Lui", "Er", "👦"],
+    ["Ela", "She", "Ella", "Elle", "Lei", "Sie", "👧"],
+    ["Nós", "We", "Nosotros", "Nous", "Noi", "Wir", "👫"],
+    ["Muito", "Very", "Muy", "Très", "Molto", "Sehr", "💯"],
+  ],
+  frases: [
+    ["Sim, eu entendo", "Yes, I understand", "Sí, entiendo", "Oui, je comprends", "Sì, capisco", "Ja, ich verstehe"],
+    ["Não, obrigado", "No, thank you", "No, gracias", "Non, merci", "No, grazie", "Nein, danke"],
+    ["Ela é muito simpática", "She is very nice", "Ella es muy simpática", "Elle est très sympathique", "Lei è molto simpatica", "Sie ist sehr nett"],
+    ["Nós falamos devagar", "We speak slowly", "Hablamos despacio", "Nous parlons lentement", "Parliamo lentamente", "Wir sprechen langsam"],
+  ],
+});
+inserirTema("depois", "saudacoes", {
+  id: "apresentacao", titulo: "Apresentações", icone: "🤝", desc: "Diga seu nome, idade e de onde você é", imagens: false, nivel: "A1",
+  palavras: [
+    ["Nome", "Name", "Nombre", "Nom", "Nome", "Name", "🏷️"],
+    ["Idade", "Age", "Edad", "Âge", "Età", "Alter", "🎂"],
+    ["País", "Country", "País", "Pays", "Paese", "Land", "🗺️"],
+    ["Morar", "Live", "Vivir", "Habiter", "Abitare", "Wohnen", "🏡"],
+    ["Prazer", "Nice to meet you", "Encantado", "Enchanté", "Piacere", "Freut mich", "🤝"],
+    ["Amigo", "Friend", "Amigo", "Ami", "Amico", "Freund", "🧑‍🤝‍🧑"],
+    ["Brasileiro", "Brazilian", "Brasileño", "Brésilien", "Brasiliano", "Brasilianer", "💚"],
+    ["Profissão", "Job", "Profesión", "Métier", "Professione", "Beruf", "👷"],
+  ],
+  frases: [
+    ["Eu sou do Brasil", "I am from Brazil", "Soy de Brasil", "Je viens du Brésil", "Vengo dal Brasile", "Ich komme aus Brasilien"],
+    ["Qual é o seu nome?", "What is your name?", "¿Cómo te llamas?", "Comment tu t'appelles ?", "Come ti chiami?", "Wie heißt du?"],
+    ["Eu moro em São Paulo", "I live in São Paulo", "Vivo en São Paulo", "J'habite à São Paulo", "Abito a San Paolo", "Ich wohne in São Paulo"],
+    ["Prazer em conhecer você", "Nice to meet you", "Encantado de conocerte", "Ravi de te rencontrer", "Piacere di conoscerti", "Freut mich, dich kennenzulernen"],
+  ],
+});
+inserirTema("depois", "numeros", {
+  id: "numeros2", titulo: "Números até mil", icone: "💯", desc: "Do onze ao mil", imagens: false, nivel: "A1",
+  palavras: [
+    ["Onze", "Eleven", "Once", "Onze", "Undici", "Elf", "1️⃣1️⃣"],
+    ["Doze", "Twelve", "Doce", "Douze", "Dodici", "Zwölf", "1️⃣2️⃣"],
+    ["Quinze", "Fifteen", "Quince", "Quinze", "Quindici", "Fünfzehn", "1️⃣5️⃣"],
+    ["Vinte", "Twenty", "Veinte", "Vingt", "Venti", "Zwanzig", "2️⃣0️⃣"],
+    ["Trinta", "Thirty", "Treinta", "Trente", "Trenta", "Dreißig", "3️⃣0️⃣"],
+    ["Cinquenta", "Fifty", "Cincuenta", "Cinquante", "Cinquanta", "Fünfzig", "5️⃣0️⃣"],
+    ["Cem", "One hundred", "Cien", "Cent", "Cento", "Hundert", "💯"],
+    ["Mil", "One thousand", "Mil", "Mille", "Mille", "Tausend", "🔢"],
+  ],
+  frases: [
+    ["Eu tenho vinte anos", "I am twenty years old", "Tengo veinte años", "J'ai vingt ans", "Ho vent'anni", "Ich bin zwanzig Jahre alt"],
+    ["O livro custa quinze euros", "The book costs fifteen euros", "El libro cuesta quince euros", "Le livre coûte quinze euros", "Il libro costa quindici euro", "Das Buch kostet fünfzehn Euro"],
+    ["Há trinta alunos na sala", "There are thirty students in the class", "Hay treinta alumnos en la clase", "Il y a trente élèves dans la classe", "Ci sono trenta studenti in classe", "Es gibt dreißig Schüler in der Klasse"],
+    ["Eu vou dormir às onze", "I go to bed at eleven", "Me acuesto a las once", "Je me couche à onze heures", "Vado a letto alle undici", "Ich gehe um elf ins Bett"],
+  ],
+});
+
 // Níveis do Quadro Europeu Comum de Referência (CEFR)
 const NIVEIS = [
   { id: "A1", nome: "Iniciante", desc: "Entende e usa expressões do dia a dia e frases bem simples." },

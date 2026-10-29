@@ -200,14 +200,136 @@ function aplicarTema(idioma = E.idioma) {
 }
 
 // ---------- Mascotes: os dois mudam de cor com o idioma ----------
+// nivel = nível do jogador em que o mascote aparece na loja; preco = moedas
 const MASCOTES = {
-  kiko: { nome: "Kiko", desc: "o papagaio poliglota", apresentacao: "Oi! Eu sou o Kiko.<br>Papagaio que fala 5 idiomas!" },
-  lumi: { nome: "Lumi", desc: "a bolinha simpática", apresentacao: "Oi! Eu sou a Lumi.<br>Mudo de cor com o idioma!" },
+  kiko: { nome: "Kiko", desc: "o papagaio poliglota", nivel: 1, preco: 0, apresentacao: "Oi! Eu sou o Kiko.<br>Papagaio que fala 5 idiomas!" },
+  lumi: { nome: "Lumi", desc: "a bolinha simpática", nivel: 1, preco: 0, apresentacao: "Oi! Eu sou a Lumi.<br>Mudo de cor com o idioma!" },
+  tito: { nome: "Tito", desc: "a raposa esperta", nivel: 2, preco: 60, apresentacao: "Oi! Eu sou o Tito.<br>Esperto para aprender!" },
+  bubu: { nome: "Bubu", desc: "o urso abraçador", nivel: 3, preco: 100, apresentacao: "Oi! Eu sou o Bubu.<br>Vamos estudar juntos?" },
+  mia: { nome: "Mia", desc: "a gata curiosa", nivel: 4, preco: 140, apresentacao: "Miau! Eu sou a Mia.<br>Curiosa por idiomas!" },
+  pingo: { nome: "Pingo", desc: "o pinguim viajante", nivel: 5, preco: 180, apresentacao: "Oi! Eu sou o Pingo.<br>Já viajei o mundo todo!" },
+  bit: { nome: "Bit", desc: "o robô tradutor", nivel: 6, preco: 220, apresentacao: "Bip! Eu sou o Bit.<br>Traduzo tudo!" },
+  draco: { nome: "Draco", desc: "o dragão corajoso", nivel: 8, preco: 320, apresentacao: "Oi! Eu sou o Draco.<br>Sem medo de errar!" },
+  luna: { nome: "Luna", desc: "a unicórnio mágica", nivel: 10, preco: 420, apresentacao: "Oi! Eu sou a Luna.<br>Aprender é mágico!" },
+  oto: { nome: "Oto", desc: "o polvo de 8 idiomas", nivel: 12, preco: 520, apresentacao: "Oi! Eu sou o Oto.<br>Um idioma por braço!" },
 };
 const nomeMascote = () => (MASCOTES[E.mascote] || MASCOTES.kiko).nome;
 let lumiId = 0;
+function desenharMascote(chave, humor = "feliz", classe = "") {
+  if (chave === "lumi") return desenharLumi(humor, classe);
+  if (BICHOS[chave]) return desenharBicho(chave, humor, classe);
+  return desenharKiko(humor, classe);
+}
 function lumi(humor = "feliz", classe = "") {
-  return (typeof E !== "undefined" && E.mascote === "lumi") ? desenharLumi(humor, classe) : desenharKiko(humor, classe);
+  return desenharMascote(typeof E !== "undefined" ? E.mascote : "kiko", humor, classe);
+}
+
+// Rosto padrão (olhos que seguem o mouse, sobrancelhas e boca conforme o humor)
+function rostoMascote(humor, { olhos, r = 12, pr = 6.5, boca, branco = true, corPupila = "#1b1530", corBoca = "#1b1530", bochechas = true }) {
+  let s = olhos.map(([x, y]) => `<g class="lumi-olho">${branco ? `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff"/>` : ""}
+    <circle class="pupila" cx="${x}" cy="${y}" r="${pr}" fill="${corPupila}"/></g>
+    <circle cx="${x + 2.6}" cy="${y - 3}" r="1.9" fill="#fff" opacity=".9"/>`).join("");
+  const [[x1, y1], [x2, y2]] = olhos;
+  if (humor === "triste") s += `<path d="M${x1 - r} ${y1 - r + 1} L${x1 + r * 0.7} ${y1 - r - 5}" class="kiko-traco"/><path d="M${x2 + r} ${y2 - r + 1} L${x2 - r * 0.7} ${y2 - r - 5}" class="kiko-traco"/>`;
+  if (humor === "uau") s += `<path d="M${x1 - r} ${y1 - r - 3} Q${x1} ${y1 - r - 10} ${x1 + r} ${y1 - r - 3}" class="kiko-traco"/><path d="M${x2 - r} ${y2 - r - 3} Q${x2} ${y2 - r - 10} ${x2 + r} ${y2 - r - 3}" class="kiko-traco"/>`;
+  if (bochechas) s += `<circle cx="${x1 - 5}" cy="${y1 + r + 6}" r="5.5" fill="#ff7aa8" opacity=".55"/><circle cx="${x2 + 5}" cy="${y2 + r + 6}" r="5.5" fill="#ff7aa8" opacity=".55"/>`;
+  if (boca) {
+    const [mx, my] = boca;
+    if (humor === "feliz") s += `<path d="M${mx - 9} ${my} Q${mx} ${my + 8} ${mx + 9} ${my}" fill="none" stroke="${corBoca}" stroke-width="3.5" stroke-linecap="round"/>`;
+    if (humor === "triste") s += `<path d="M${mx - 8} ${my + 5} Q${mx} ${my - 3} ${mx + 8} ${my + 5}" fill="none" stroke="${corBoca}" stroke-width="3.5" stroke-linecap="round"/>`;
+    if (humor === "uau") s += `<ellipse cx="${mx}" cy="${my + 2}" rx="5.5" ry="6.5" fill="${corBoca}"/>`;
+    if (humor === "festa") s += `<path d="M${mx - 11} ${my - 2} Q${mx} ${my + 17} ${mx + 11} ${my - 2} Z" fill="${corBoca}"/><path d="M${mx - 6} ${my + 6} Q${mx} ${my + 12} ${mx + 6} ${my + 6}" fill="#FF6B81"/>`;
+  }
+  return s;
+}
+
+const CORPO_OVO = "M60 24 C90 24 104 48 102 74 C100 102 82 116 60 116 C38 116 20 102 18 74 C16 48 30 24 60 24Z";
+// Cada bicho: o que fica atrás do corpo, o corpo, os detalhes e o rosto
+const BICHOS = {
+  tito: g => ({
+    atras: `<path d="M96 104 C122 100 122 62 104 54 C110 74 102 92 86 98Z" fill="url(#${g})"/><circle cx="105" cy="59" r="6" fill="#fff"/>
+      <path d="M26 46 L32 8 L58 32Z" fill="url(#${g})"/><path d="M94 46 L88 8 L62 32Z" fill="url(#${g})"/>
+      <path d="M33 38 L36 18 L50 32Z" fill="#fff" opacity=".55"/><path d="M87 38 L84 18 L70 32Z" fill="#fff" opacity=".55"/>`,
+    corpo: CORPO_OVO,
+    frente: `<path d="M22 66 C30 92 46 100 60 100 C74 100 90 92 98 66 C86 80 74 84 60 84 C46 84 34 80 22 66Z" fill="#fff" opacity=".92"/>
+      <ellipse cx="60" cy="82" rx="5" ry="3.6" fill="#1b1530"/>`,
+    rosto: { olhos: [[44, 62], [76, 62]], r: 11, pr: 6, boca: [60, 90] },
+  }),
+  bubu: g => ({
+    atras: `<circle cx="30" cy="34" r="15" fill="url(#${g})"/><circle cx="90" cy="34" r="15" fill="url(#${g})"/>
+      <circle cx="30" cy="34" r="8" fill="#fff" opacity=".35"/><circle cx="90" cy="34" r="8" fill="#fff" opacity=".35"/>`,
+    corpo: "M60 22 C92 22 106 46 104 74 C102 104 84 118 60 118 C36 118 18 104 16 74 C14 46 28 22 60 22Z",
+    frente: `<ellipse cx="60" cy="102" rx="24" ry="12" fill="#fff" opacity=".2"/><ellipse cx="60" cy="80" rx="19" ry="14" fill="#fff" opacity=".9"/>
+      <ellipse cx="60" cy="74" rx="6.5" ry="4.5" fill="#1b1530"/>`,
+    rosto: { olhos: [[42, 56], [78, 56]], r: 9, pr: 5.5, boca: [60, 85] },
+  }),
+  mia: g => ({
+    atras: `<path d="M94 108 C116 108 118 80 108 70 C106 86 100 96 88 100Z" style="fill:var(--c2)"/>
+      <path d="M24 50 L30 12 L54 32Z" fill="url(#${g})"/><path d="M96 50 L90 12 L66 32Z" fill="url(#${g})"/>
+      <path d="M31 42 L33 22 L46 33Z" fill="#ff9ec0"/><path d="M89 42 L87 22 L74 33Z" fill="#ff9ec0"/>`,
+    corpo: CORPO_OVO,
+    frente: `<path d="M55 76 L65 76 L60 81Z" fill="#ff7aa8"/>
+      <path d="M40 80 L16 75 M40 84 L16 86 M80 80 L104 75 M80 84 L104 86" stroke="#1b1530" stroke-width="1.6" opacity=".55" stroke-linecap="round"/>`,
+    rosto: { olhos: [[44, 60], [76, 60]], r: 11, pr: 6, boca: [60, 87] },
+  }),
+  pingo: (g, humor) => ({
+    atras: `<path d="M22 64 C8 76 10 92 20 98 C22 86 24 76 28 68Z" fill="url(#${g})"/><path d="M98 64 C112 76 110 92 100 98 C98 86 96 76 92 68Z" fill="url(#${g})"/>
+      <ellipse cx="48" cy="118" rx="9" ry="4" fill="#FFB020"/><ellipse cx="72" cy="118" rx="9" ry="4" fill="#FFB020"/>`,
+    corpo: "M60 14 C88 14 100 44 100 76 C100 104 84 118 60 118 C36 118 20 104 20 76 C20 44 32 14 60 14Z",
+    frente: `<path d="M60 40 C80 40 88 60 88 80 C88 102 76 112 60 112 C44 112 32 102 32 80 C32 60 40 40 60 40Z" fill="#fff"/>` +
+      (humor === "festa" || humor === "uau"
+        ? `<path d="M51 58 L69 58 L60 65Z" class="kiko-bico"/><path d="M53 67 L67 67 L60 ${humor === "festa" ? 78 : 73}Z" class="kiko-bico"/>`
+        : `<path d="M51 59 L69 59 L60 70Z" class="kiko-bico"/>`),
+    rosto: { olhos: [[47, 44], [73, 44]], r: 9, pr: 5 },
+  }),
+  bit: g => ({
+    atras: `<line x1="60" y1="24" x2="60" y2="9" stroke="#94A3B8" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="60" cy="8" r="6" class="bit-luz" style="fill:var(--c2)"/>
+      <rect x="9" y="52" width="11" height="24" rx="4" style="fill:var(--c2)"/><rect x="100" y="52" width="11" height="24" rx="4" style="fill:var(--c2)"/>
+      <rect x="34" y="96" width="52" height="22" rx="8" style="fill:var(--c2)"/><circle cx="60" cy="107" r="4.5" fill="#FDE047"/>`,
+    corpo: "M40 22 H80 Q102 22 102 44 V74 Q102 96 80 96 H40 Q18 96 18 74 V44 Q18 22 40 22Z",
+    frente: `<rect x="28" y="34" width="64" height="50" rx="14" fill="#0F172A" opacity=".88"/>`,
+    rosto: { olhos: [[46, 54], [74, 54]], r: 8, pr: 7, branco: false, corPupila: "#67E8F9", boca: [60, 70], corBoca: "#67E8F9", bochechas: false },
+  }),
+  draco: g => ({
+    atras: `<path d="M24 62 L2 34 L10 64 L0 78 L22 80Z" style="fill:var(--c2)" opacity=".92"/><path d="M96 62 L118 34 L110 64 L120 78 L98 80Z" style="fill:var(--c2)" opacity=".92"/>
+      <path d="M90 104 C112 110 118 96 116 86 L108 96 C104 102 98 104 88 100Z" fill="url(#${g})"/>
+      <path d="M40 30 L33 6 L52 24Z" fill="#FDE68A"/><path d="M80 30 L87 6 L68 24Z" fill="#FDE68A"/>
+      <path d="M48 24 L54 12 L60 22 L66 12 L72 24Z" style="fill:var(--c2)"/>`,
+    corpo: CORPO_OVO,
+    frente: `<ellipse cx="60" cy="98" rx="22" ry="16" fill="#FDE68A" opacity=".6"/>
+      <path d="M44 92 H76 M42 100 H78 M46 108 H74" stroke="#D97706" stroke-width="1.5" opacity=".45"/>
+      <circle cx="54" cy="79" r="2" fill="#1b1530"/><circle cx="66" cy="79" r="2" fill="#1b1530"/>`,
+    rosto: { olhos: [[44, 58], [76, 58]], r: 12, pr: 6, boca: [60, 87] },
+  }),
+  luna: g => ({
+    atras: `<path d="M30 42 C12 52 14 82 26 96 C28 74 34 60 44 48Z" style="fill:var(--c2)"/><path d="M90 42 C108 52 106 82 94 96 C92 74 86 60 76 48Z" style="fill:var(--c2)"/>
+      <path d="M36 36 L38 14 L52 30Z" fill="url(#${g})"/><path d="M84 36 L82 14 L68 30Z" fill="url(#${g})"/>
+      <path d="M54 28 L60 -2 L66 28Z" fill="#FCD34D" stroke="#D97706" stroke-width="1.5"/><path d="M56 19 L64 16 M57 10 L63 8" stroke="#D97706" stroke-width="1.5"/>`,
+    corpo: CORPO_OVO,
+    frente: `<path d="M46 28 C52 16 68 14 74 28 C66 22 56 24 46 32Z" style="fill:var(--c2)"/>
+      <ellipse cx="60" cy="92" rx="20" ry="13" fill="#fff" opacity=".35"/><circle cx="53" cy="92" r="2" fill="#1b1530"/><circle cx="67" cy="92" r="2" fill="#1b1530"/>`,
+    rosto: { olhos: [[44, 62], [76, 62]], r: 11, pr: 6, boca: [60, 99] },
+  }),
+  oto: g => ({
+    atras: [["M26 88 Q12 110 24 124 Q30 112 40 94Z"], ["M40 96 Q34 116 44 128 Q50 114 52 98Z"], ["M55 98 Q54 118 60 130 Q66 118 65 98Z"], ["M68 98 Q70 114 76 128 Q86 116 80 96Z"], ["M80 94 Q90 112 96 124 Q108 110 94 88Z"]]
+      .map(([d]) => `<path d="${d}" fill="url(#${g})"/>`).join("") +
+      `<circle cx="28" cy="112" r="2.5" style="fill:var(--c2)"/><circle cx="46" cy="118" r="2.5" style="fill:var(--c2)"/><circle cx="60" cy="120" r="2.5" style="fill:var(--c2)"/><circle cx="76" cy="118" r="2.5" style="fill:var(--c2)"/><circle cx="94" cy="112" r="2.5" style="fill:var(--c2)"/>`,
+    corpo: "M60 14 C92 14 104 40 102 66 C100 90 84 102 60 102 C36 102 20 90 18 66 C16 40 28 14 60 14Z",
+    frente: `<circle cx="40" cy="30" r="5" style="fill:var(--c2)" opacity=".55"/><circle cx="78" cy="26" r="4" style="fill:var(--c2)" opacity=".55"/><circle cx="88" cy="44" r="3" style="fill:var(--c2)" opacity=".55"/>`,
+    rosto: { olhos: [[44, 58], [76, 58]], r: 12, pr: 6.5, boca: [60, 80] },
+  }),
+};
+function desenharBicho(chave, humor = "feliz", classe = "") {
+  const id = "bichoGrad" + (++lumiId);
+  const b = BICHOS[chave](id, humor);
+  return `<svg class="lumi bicho bicho-${chave} humor-${humor} ${classe}" viewBox="0 0 120 130" aria-hidden="true">
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" style="stop-color:var(--c1)"/><stop offset="1" style="stop-color:color-mix(in srgb, var(--c1) 70%, #000)"/>
+    </linearGradient></defs>
+    <ellipse cx="60" cy="125" rx="30" ry="4.5" class="lumi-sombra"/>
+    <g class="lumi-corpo">${b.atras || ""}<path d="${b.corpo}" fill="url(#${id})"/>${b.frente || ""}${rostoMascote(humor, b.rosto)}</g>
+  </svg>`;
 }
 
 // Kiko: um papagaio com as cores da bandeira do idioma

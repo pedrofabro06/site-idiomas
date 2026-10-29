@@ -95,7 +95,7 @@ function iniciarLicao({ tema = null, nivel = 0, treino = false, revisao = false,
   } else if (treino) itens = montarTreino();
   else if (ia) itens = [...palavrasDoTema(tema).map(w => ({ tipo: "intro", w })), ...montarLicao(tema, 2)];
   else itens = montarLicao(tema, nivel);
-  const destino = revisao || ia ? "praticar" : "trilha";
+  const destino = revisao || ia ? "praticar" : tema && TEMAS.includes(tema) && !naTrilha(tema) ? "fundamentos" : "trilha";
   const S = {
     itens, pos: 0, total: itens.filter(i => i.tipo !== "intro").length, concluidos: 0,
     acertos: 0, erros: 0, combo: 0, comboMax: 0, inicio: Date.now(), treino, revisao, ia, semCusto, destino, tema, nivel, estado: "verificar",

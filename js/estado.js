@@ -12,7 +12,8 @@ function estadoPadrao() {
     xp: 0, moedas: 50, vidas: VIDAS_MAX, vidasEm: Date.now(),
     streak: 0, ultimoDia: null, protetor: 0, meta: 30, som: true,
     idioma: null,
-    mascote: "kiko",   // kiko (papagaio) ou lumi
+    mascote: "kiko",   // mascote em uso
+    mascotes: ["kiko", "lumi"], // mascotes que o jogador já tem
     vozes: {},         // vozes[idioma] = nome da voz escolhida
     velocidade: 1,     // velocidade da fala (0.6 a 1.3)
     srs: {},           // srs[idioma][chave] = cartão de repetição espaçada
@@ -125,6 +126,12 @@ function ganharXP(n) {
   if (nivelDepois > nivelAntes) {
     toast("⬆️", `Você chegou ao nível ${nivelDepois}!`, "Continue assim.");
     som("nivel");
+    // Mascotes novos liberam com o nível
+    Object.entries(MASCOTES).forEach(([k, m]) => {
+      if (m.nivel > nivelAntes && m.nivel <= nivelDepois && !E.mascotes.includes(k)) {
+        setTimeout(() => toast("🎉", `Mascote liberado: ${m.nome}!`, `Compre na loja por ${m.preco} 🪙`), 1200);
+      }
+    });
   }
   // Mantém só os últimos 60 dias de histórico
   const chaves = Object.keys(E.historico).sort();
@@ -156,7 +163,24 @@ function progTema(temaId, idioma = E.idioma) {
   E.prog[idioma][temaId] = E.prog[idioma][temaId] || { licao: 0, bau: false, estrelas: [] };
   return E.prog[idioma][temaId];
 }
-const temaDesbloqueado = (i, idioma = E.idioma) => i === 0 || progTema(TEMAS[i - 1].id, idioma).licao >= 4;
+// ---------- Trilha baseada no nível do teste ----------
+// A trilha começa no nível seguinte ao que o aluno já domina.
+// As unidades abaixo dele ficam na aba "Fundamentos".
+function inicioTrilha(idioma = E.idioma) {
+  const teste = (E.nivelamento[idioma] || {}).nivel;
+  const idx = teste ? ORDEM_NIVEIS.indexOf(teste) + 1 : 0;
+  const ultimoComUnidades = Math.max(...TEMAS.map(t => ORDEM_NIVEIS.indexOf(t.nivel)));
+  return Math.min(idx, ultimoComUnidades);
+}
+const naTrilha = (t, idioma = E.idioma) => ORDEM_NIVEIS.indexOf(t.nivel) >= inicioTrilha(idioma);
+const temasDaTrilha = (idioma = E.idioma) => TEMAS.filter(t => naTrilha(t, idioma));
+const temasFundamentos = (idioma = E.idioma) => TEMAS.filter(t => !naTrilha(t, idioma));
+function temaDesbloqueado(i, idioma = E.idioma) {
+  const t = TEMAS[i];
+  if (!naTrilha(t, idioma)) return true; // fundamentos ficam sempre abertos
+  const primeiro = TEMAS.findIndex(x => naTrilha(x, idioma));
+  return i === primeiro || progTema(TEMAS[i - 1].id, idioma).licao >= 4;
+}
 
 // Nível atual do aluno: o do teste ou o mais alto que ele já completou na trilha
 function nivelAtual(idioma = E.idioma) {
@@ -180,15 +204,17 @@ function totalAprendidas(idioma = E.idioma) {
   return Object.values(E.aprendidas[idioma] || {}).reduce((s, l) => s + l.length, 0);
 }
 function percentualIdioma(idioma) {
+  const temas = temasDaTrilha(idioma);
   let feito = 0;
-  TEMAS.forEach(t => {
+  temas.forEach(t => {
     const p = (E.prog[idioma] || {})[t.id];
     if (p) feito += Math.min(4, p.licao) + (p.bau ? 1 : 0);
   });
-  return Math.round((feito / (TEMAS.length * 5)) * 100);
+  return Math.round((feito / (temas.length * 5)) * 100);
 }
 function proximaLicao() {
   for (let i = 0; i < TEMAS.length; i++) {
+    if (!naTrilha(TEMAS[i])) continue;
     const p = progTema(TEMAS[i].id);
     if (p.licao < 4) return { tema: TEMAS[i], nivel: p.licao, i };
     if (!p.bau) return { tema: TEMAS[i], nivel: 4, i };
@@ -214,6 +240,8 @@ const CONQUISTAS = [
   { id: "cerebro", icone: "🧠", nome: "Cérebro afiado", desc: "Aprenda 50 palavras em um idioma", t: e => Object.keys(e.aprendidas).some(k => totalAprendidas(k) >= 50) },
   { id: "cofre", icone: "💰", nome: "Cofrinho", desc: "Junte 300 moedas", t: e => e.moedas >= 300 },
   { id: "estilo", icone: "🎭", nome: "Estiloso", desc: "Tenha 3 avatares", t: e => e.avatares.length >= 3 },
+  { id: "zoologico", icone: "🦜", nome: "Colecionador", desc: "Tenha 5 mascotes", t: e => (e.mascotes || []).length >= 5 },
+  { id: "todos", icone: "🏆", nome: "Zoológico completo", desc: "Tenha todos os mascotes", t: e => (e.mascotes || []).length >= Object.keys(MASCOTES).length },
 ];
 
 // ---------- Desafios do dia (3 por dia, sorteados pela data) ----------

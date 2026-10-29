@@ -5,6 +5,7 @@ const TELAS = {
   inicio: () => telaInicio(),
   idiomas: () => telaIdiomas(),
   trilha: () => telaTrilha(),
+  fundamentos: () => telaTrilha("fundamentos"),
   praticar: () => telaPraticar(),
   revisao: () => {
     if (cartoesVencidos().length) return iniciarLicao({ revisao: true });
@@ -30,10 +31,10 @@ function mostrarRota() {
   window.speechSynthesis?.cancel();
   garantirDia();
   aplicarTema();
-  const precisaIdioma = ["trilha", "fliperama", "praticar", "revisao", "pronuncia", "tutor", "licaoia"];
+  const precisaIdioma = ["trilha", "fundamentos", "fliperama", "praticar", "revisao", "pronuncia", "tutor", "licaoia"];
   if (precisaIdioma.includes(nome) && !E.idioma) { telaIdiomas(); marcarNav("trilha"); return; }
   (TELAS[nome] || TELAS.inicio)();
-  marcarNav(["revisao", "pronuncia", "tutor", "licaoia", "metodo"].includes(nome) ? "praticar" : nome);
+  marcarNav(["revisao", "pronuncia", "tutor", "licaoia", "metodo"].includes(nome) ? "praticar" : nome === "fundamentos" ? "trilha" : nome);
   atualizarTopo();
 }
 addEventListener("hashchange", mostrarRota);
@@ -61,8 +62,7 @@ function selecionarIdioma(cod) {
   som("pop");
   toast("🎨", `${IDIOMAS[cod].nome} selecionado`, `${IDIOMAS[cod].ola}! Tudo ganhou as cores da bandeira.`);
   ir("trilha");
-  // Primeira vez neste idioma: oferece o teste de nivelamento
-  if (!E.nivelamento[cod] && percentualIdioma(cod) === 0) setTimeout(() => oferecerNivelamento(cod), 350);
+  // Primeira vez neste idioma: a trilha mostra o portão do teste de nível
 }
 
 // ---------- Componentes ----------
@@ -211,6 +211,7 @@ function telaInicio() {
   ligarCardsIdiomas();
   if (idi) {
     $("#hContinuar").onclick = () => {
+      if (!E.nivelamento[E.idioma]) return ir("trilha"); // passa pelo teste de nível primeiro
       if (!prox) return ir("fliperama");
       if (prox.nivel === 4) return ir("trilha");
       iniciarLicao({ tema: prox.tema, nivel: prox.nivel });
@@ -245,9 +246,20 @@ const NOS = [
 ];
 const DESLOCAMENTO = [0, 70, 100, 70, 0];
 
-function telaTrilha() {
+function telaTrilha(modo = "trilha") {
   const idi = IDIOMAS[E.idioma];
+  // Sem teste ainda: quem já tem progresso (versão antiga) segue normal; os novos passam pelo teste
+  if (!E.nivelamento[E.idioma]) {
+    const temProgresso = Object.values(E.prog[E.idioma] || {}).some(p => p.licao > 0);
+    if (!temProgresso) return telaPortaoNivel();
+    E.nivelamento[E.idioma] = { nivel: null, legado: true, data: hoje() };
+    salvar();
+  }
   const prox = proximaLicao();
+  const fundamentos = modo === "fundamentos";
+  const nFund = temasFundamentos().length;
+  const teste = E.nivelamento[E.idioma];
+  const comeca = ORDEM_NIVEIS[inicioTrilha()];
   let html = `
     <section class="trilha-topo">
       <div class="tt-bandeira">${svgBandeira(E.idioma, "bandeira grande")}</div>
@@ -260,20 +272,30 @@ function telaTrilha() {
       <div class="tt-acoes">
         ${(() => { const v = resumoSRS().vencidos; return `<button class="btn ${v ? "" : "secundario"}" id="tRevisar">🧠 Revisar${v ? ` <span class="bolinha">${v}</span>` : ""}</button>`; })()}
         <button class="btn secundario" id="tTreinar">💪 Treinar <small>+1 ❤️</small></button>
-        <button class="btn secundario" id="tNivel">📏 ${E.nivelamento[E.idioma]?.nivel ? "Nível " + E.nivelamento[E.idioma].nivel + " · refazer teste" : "Teste de nível"}</button>
+        <button class="btn secundario" id="tNivel">📏 ${teste.nivel ? "Nível " + teste.nivel + " · refazer teste" : "Refazer teste de nível"}</button>
         <button class="btn secundario" id="tTrocar">Trocar idioma</button>
       </div>
-    </section>`;
+    </section>
+    <div class="abas-trilha">
+      <a class="aba ${fundamentos ? "" : "on"}" href="#trilha">🗺️ Minha trilha <small>a partir do ${comeca}</small></a>
+      <a class="aba ${fundamentos ? "on" : ""}" href="#fundamentos">🧱 Fundamentos <small>${nFund ? nFund + " unidades básicas" : "está na sua trilha"}</small></a>
+    </div>
+    ${fundamentos ? `<div class="aviso-trilha">${nFund
+      ? `🧱 Aqui fica o básico que o teste mostrou que você já sabe. Está tudo liberado, sem ordem: use para revisar ou tirar uma dúvida. Isso não muda sua trilha.`
+      : `🌱 Você começou do zero, então todo o básico já está na sua trilha principal. Quando você fizer o teste de novo e subir de nível, as unidades fáceis aparecem aqui.`}</div>`
+      : `<div class="aviso-trilha">${teste.nivel ? `📏 Seu teste deu <b>${teste.nivel}</b>, então sua trilha começa no <b>${comeca}</b>. O básico está na aba Fundamentos.` : teste.zero ? `🌱 Começando do zero: sua trilha vai do primeiro passo até o avançado.` : `🗺️ Sua trilha completa, do A1 ao C1. Faça o teste de nível para pular o que você já sabe.`}</div>`}`;
 
-  let nivelAnterior = null;
+  let nivelAnterior = null, numero = 0;
   TEMAS.forEach((t, i) => {
+    if (naTrilha(t) === fundamentos) return; // cada aba mostra só as suas unidades
+    numero++;
     const p = progTema(t.id);
     const lib = temaDesbloqueado(i);
-    const lado = i % 2 ? -1 : 1;
+    const lado = numero % 2 ? 1 : -1;
     if (t.nivel !== nivelAnterior) {
       nivelAnterior = t.nivel;
       const info = NIVEIS.find(n => n.id === t.nivel);
-      const temasNivel = TEMAS.filter(x => x.nivel === t.nivel);
+      const temasNivel = TEMAS.filter(x => x.nivel === t.nivel && naTrilha(x) !== fundamentos);
       const feitos = temasNivel.filter(x => progTema(x.id).licao >= 4).length;
       html += `<div class="cabecalho-nivel" id="nivel-${t.nivel}">
         <span class="selo-nivel pequeno">${t.nivel}</span>
@@ -282,9 +304,9 @@ function telaTrilha() {
       </div>`;
     }
     html += `<section class="unidade ${lib ? "" : "bloqueada"}" id="u${i}">
-      <div class="unidade-banner ${i % 2 ? "alt" : ""}">
+      <div class="unidade-banner ${numero % 2 ? "" : "alt"}">
         <div>
-          <small>Unidade ${i + 1} ${p.licao >= 4 ? "· 👑 dominada" : ""}</small>
+          <small>${fundamentos ? "Fundamentos" : "Unidade " + numero} · ${t.nivel} ${p.licao >= 4 ? "· 👑 dominada" : ""}</small>
           <h2>${t.icone} ${t.titulo}</h2>
           <p>${t.desc}</p>
         </div>
@@ -309,6 +331,7 @@ function telaTrilha() {
     });
     html += `</div></section>`;
   });
+  if (!numero) html += `<div class="vazio">${lumi("feliz", "media")}<p class="sub">Nada por aqui ainda.</p></div>`;
   render(html);
 
   $("#tTreinar").onclick = () => iniciarLicao({ treino: true });
@@ -318,9 +341,9 @@ function telaTrilha() {
   $$("[data-vocab]").forEach(b => b.onclick = () => modalVocabulario(TEMAS[+b.dataset.vocab]));
   $$(".no").forEach(b => b.onclick = () => clicarNo(+b.dataset.t, +b.dataset.k, b));
 
-  // Rola até a fase atual
+  // Rola até a fase atual (só na trilha principal)
   const atual = $(".no.atual");
-  if (atual) setTimeout(() => atual.scrollIntoView({ behavior: "smooth", block: "center" }), 250);
+  if (atual && !fundamentos) setTimeout(() => atual.scrollIntoView({ behavior: "smooth", block: "center" }), 250);
 }
 
 function clicarNo(i, k, botao) {
@@ -329,7 +352,7 @@ function clicarNo(i, k, botao) {
   if (botao.classList.contains("bloqueado")) {
     tremer(botao);
     som("errado");
-    toast("🔒", "Fase bloqueada", temaDesbloqueado(i) ? "Conclua a fase anterior primeiro." : `Vença o desafio da unidade ${i} para liberar.`);
+    toast("🔒", "Fase bloqueada", temaDesbloqueado(i) ? "Conclua a fase anterior primeiro." : "Vença o desafio 👑 da unidade anterior para liberar.");
     return;
   }
   if (k === 4) return abrirBau(t);
@@ -357,7 +380,7 @@ function abrirBau(t) {
     <h2 id="bauTitulo">Toque no baú!</h2>
     <p class="sub" id="bauTexto">Recompensa da unidade ${t.titulo}.</p>
     <div class="acoes"><button class="btn" id="bauOk" hidden data-fechar>Pegar</button></div>`,
-    { aoFechar: () => { if (p.bau) telaTrilha(); } });
+    { aoFechar: () => { if (p.bau) mostrarRota(); } });
   const bau = $("#bau", m.el);
   bau.onclick = () => {
     if (p.bau) return;
@@ -450,6 +473,18 @@ function telaLoja() {
         <button class="btn" data-comprar="${it.id}" ${!it.pode || E.moedas < it.preco ? "disabled" : ""} title="${!it.pode ? it.motivo : ""}">🪙 ${it.preco}</button>
       </div>`).join("")}
     </div>
+    <h2>Mascotes <small class="sub">liberam conforme você sobe de nível · você está no nível ${nivelDe(E.xp)}</small></h2>
+    <div class="grade-mascotes">${Object.entries(MASCOTES).map(([k, m]) => {
+      const tem = E.mascotes.includes(k);
+      const usando = E.mascote === k;
+      const liberado = nivelDe(E.xp) >= m.nivel;
+      const estado = usando ? "usando" : tem ? "tem" : liberado ? "liberado" : "travado";
+      return `<button class="mascote-loja ${estado}" data-mascote="${k}">
+        <div class="ml-desenho">${desenharMascote(k, usando ? "festa" : "feliz", "media")}</div>
+        <b>${m.nome}</b><small>${m.desc}</small>
+        <span class="ml-estado">${usando ? "✔ Usando" : tem ? "Usar" : liberado ? `🪙 ${m.preco}` : `🔒 Nível ${m.nivel}`}</span>
+      </button>`;
+    }).join("")}</div>
     <h2>Avatares</h2>
     <div class="grade-avatares">${AVATARES.map(a => {
       const tem = E.avatares.includes(a.e);
@@ -468,6 +503,23 @@ function telaLoja() {
     if (it.id === "protetor") { E.protetor++; salvar(); }
     som("moeda");
     toast(it.ic, "Comprado!", it.nome);
+    telaLoja();
+  });
+  $$("[data-mascote]").forEach(b => b.onclick = () => {
+    const k = b.dataset.mascote, m = MASCOTES[k];
+    if (!E.mascotes.includes(k)) {
+      if (nivelDe(E.xp) < m.nivel) { tremer(b); som("errado"); return toast("🔒", `${m.nome} libera no nível ${m.nivel}`, `Faltam ${xpDoNivel(m.nivel) - E.xp} XP. Continue estudando!`); }
+      if (E.moedas < m.preco) { tremer(b); som("errado"); return toast("🪙", "Moedas insuficientes", `Faltam ${m.preco - E.moedas} moedas.`); }
+      gastarMoedas(m.preco);
+      E.mascotes.push(k);
+      som("bau");
+      confetes(80);
+      toast("🎉", `${m.nome} é seu!`, m.desc);
+    }
+    E.mascote = k;
+    $("#marcaLumi").innerHTML = lumi("feliz", "marca-svg");
+    checarTudo();
+    salvar();
     telaLoja();
   });
   $$("[data-avatar]").forEach(b => b.onclick = () => {
@@ -540,8 +592,9 @@ function telaPerfil() {
       <div class="cfg-linha"><div><b>Meta diária</b><small>Quanto XP você quer ganhar por dia</small></div>
         <div class="segmentado" id="pMeta">${[10, 30, 50, 100].map(v => `<button class="${E.meta === v ? "on" : ""}" data-v="${v}">${v}</button>`).join("")}</div></div>
       <div class="cfg-linha"><div><b>Mascote</b><small>Quem te acompanha nas lições</small></div>
-        <div class="escolha-mascote">${Object.entries(MASCOTES).map(([k, m]) => `
-          <button class="opcao-mascote ${E.mascote === k ? "on" : ""}" data-masc="${k}">${k === "lumi" ? desenharLumi("feliz", "mini") : desenharKiko("feliz", "mini")}<b>${m.nome}</b><small>${m.desc}</small></button>`).join("")}</div></div>
+        <div class="escolha-mascote">${E.mascotes.map(k => `
+          <button class="opcao-mascote ${E.mascote === k ? "on" : ""}" data-masc="${k}">${desenharMascote(k, "feliz", "mini")}<b>${MASCOTES[k].nome}</b><small>${MASCOTES[k].desc}</small></button>`).join("")}
+          <a class="opcao-mascote mais" href="#loja"><span>🛍️</span><b>Mais mascotes</b><small>${Object.keys(MASCOTES).length - E.mascotes.length} na loja</small></a></div></div>
       ${E.idioma ? `<div class="cfg-linha"><div><b>Voz do ${IDIOMAS[E.idioma].nome}</b><small>Escolha o sotaque e a velocidade da pronúncia</small></div>
         <div class="cfg-voz">
           <select class="campo pequeno" id="pVoz"></select>

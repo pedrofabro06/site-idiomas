@@ -16,23 +16,36 @@ function perguntasDoNivel(nivel) {
     : { tipo, w: ws[i] });
 }
 
-function oferecerNivelamento(cod) {
-  const i = IDIOMAS[cod];
-  const m = abrirModal(`
-    <div class="centro">${lumi("uau", "media")}</div>
-    <h2>Você já sabe um pouco de ${i.nome}?</h2>
-    <p class="sub">Faça um teste rápido de uns 3 minutos. Ele descobre seu nível (A1 a C1) e libera a trilha a partir dele, para você não perder tempo com o que já sabe.</p>
-    <div class="acoes coluna">
-      <button class="btn grande" id="nvSim">📏 Fazer o teste de nível</button>
-      <button class="btn secundario" id="nvNao">Começar do zero</button>
-    </div>`);
-  $("#nvSim", m.el).onclick = () => { m.fechar(); iniciarNivelamento(); };
-  $("#nvNao", m.el).onclick = () => {
-    E.nivelamento[cod] = { nivel: null, data: hoje() };
+// Portão da trilha: antes de começar um idioma, o aluno faz o teste
+// (ou diz que nunca estudou). A trilha é montada a partir do resultado.
+function telaPortaoNivel() {
+  const i = IDIOMAS[E.idioma];
+  render(`
+    <section class="portao">
+      <div class="portao-bandeira">${svgBandeira(E.idioma, "bandeira grande")}</div>
+      ${lumi("uau", "grande flutua")}
+      <span class="selo">🔒 Trilha de ${i.nome} bloqueada</span>
+      <h1>Primeiro, vamos descobrir <span class="destaque">o que você já sabe</span></h1>
+      <p class="sub">Sua trilha é montada a partir do seu nível. Quem já sabe o básico começa direto no intermediário, e quem nunca estudou começa do primeiro passo. Assim você não perde tempo com o que é fácil demais, nem trava no que é difícil demais.</p>
+      <div class="portao-passos">
+        <div><b>1</b><span>Teste de uns 3 minutos, que se adapta às suas respostas</span></div>
+        <div><b>2</b><span>Descobrimos seu nível, de A1 a C1</span></div>
+        <div><b>3</b><span>Sua trilha começa no ponto certo. O básico fica na aba Fundamentos</span></div>
+      </div>
+      <div class="acoes coluna portao-acoes">
+        <button class="btn grande" id="pgTeste">📏 Fazer o teste e liberar minha trilha</button>
+        <button class="btn secundario" id="pgZero">🌱 Nunca estudei ${i.nome}, quero começar do zero</button>
+        <button class="btn texto" id="pgTrocar">Trocar de idioma</button>
+      </div>
+    </section>`);
+  $("#pgTeste").onclick = () => iniciarNivelamento();
+  $("#pgZero").onclick = () => {
+    E.nivelamento[E.idioma] = { nivel: null, zero: true, data: hoje() };
     salvar();
-    m.fechar();
+    toast("🌱", "Trilha liberada!", "Começando do primeiro passo. Bora!");
     ir("trilha");
   };
+  $("#pgTrocar").onclick = () => ir("idiomas");
 }
 
 function iniciarNivelamento() {
@@ -59,7 +72,7 @@ function iniciarNivelamento() {
   const corpo = $("#nCorpo"), btn = $("#nBtn"), rodape = $("#nRodape");
   let ctx = null, travado = false;
   $("#nSair").onclick = async () => {
-    if (await confirmar("Sair do teste?", "Você pode fazer o teste de novo quando quiser.", "Sair", "Continuar")) ir("trilha");
+    if (await confirmar("Sair do teste?", "Sem o teste a trilha continua como estava. Você pode fazer o teste quando quiser.", "Sair", "Continuar")) ir("trilha");
   };
 
   function iniciarNivel() {
@@ -116,15 +129,10 @@ function iniciarNivelamento() {
     document.body.classList.remove("em-licao");
     const nivel = aprovado >= 0 ? NIVEIS_TESTE[aprovado] : null;
     E.nivelamento[E.idioma] = { nivel, data: hoje() };
-    let liberadas = 0;
-    if (nivel) {
-      TEMAS.forEach(t => {
-        if (ORDEM_NIVEIS.indexOf(t.nivel) <= aprovado) {
-          const p = progTema(t.id);
-          if (p.licao < 4) { p.licao = 4; p.bau = true; liberadas++; }
-        }
-      });
-    }
+    // A trilha passa a começar no nível seguinte; o que está abaixo vai para Fundamentos
+    const comeca = ORDEM_NIVEIS[inicioTrilha()];
+    const basicas = temasFundamentos().length;
+    const naSuaTrilha = temasDaTrilha().length;
     E.moedas += 30;
     salvar();
     checarTudo();
@@ -138,7 +146,10 @@ function iniciarNivelamento() {
         <div class="selo-nivel">${nivel || "Pré-A1"}</div>
         <h1><span class="destaque">${info ? info.nome : "Começando do zero"}</span></h1>
         <p class="sub">${info ? info.desc : "Sem problema! Todo mundo começa em algum lugar. A trilha vai te levar do básico ao avançado."}</p>
-        ${liberadas ? `<p class="sub">Liberamos <b>${liberadas} unidades</b> que você já domina. Seu foco agora é o nível <b>${nivelAtual()}</b>.</p>` : ""}
+        <div class="resultado-trilha">
+          <div><b>🗺️ ${naSuaTrilha}</b><span>unidades na sua trilha, começando no <b>${comeca}</b></span></div>
+          <div><b>🧱 ${basicas}</b><span>${basicas ? "unidades básicas na aba Fundamentos, para revisar quando quiser" : "unidades básicas: você vai passar por todas na trilha"}</span></div>
+        </div>
         <p class="sub">+30 🪙 por fazer o teste</p>
         <div class="acoes"><button class="btn grande" id="nOk">Ir para a trilha</button></div>
       </div>`);
