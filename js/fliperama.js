@@ -4,8 +4,8 @@
 const JOGOS = [
   { id: "chuva", nome: "Chuva de Palavras", icone: "🌧️", desc: "As palavras caem do céu. Digite a tradução antes que cheguem ao chão.", cor: ["#0EA5E9", "#6366F1"], fn: () => jogoChuva() },
   { id: "relampago", nome: "Relâmpago", icone: "⚡", desc: "60 segundos de certo ou errado. Use as setas do teclado e vá rápido.", cor: ["#F59E0B", "#EF4444"], fn: () => jogoRelampago() },
-  { id: "memoria", nome: "Memória", icone: "🧠", desc: "Vire as cartas e encontre cada palavra com sua tradução.", cor: ["#10B981", "#0EA5E9"], fn: () => jogoMemoria() },
-  { id: "turbo", nome: "Pares Turbo", icone: "🏎️", desc: "Ligue o máximo de pares que conseguir em 45 segundos.", cor: ["#EC4899", "#8B5CF6"], fn: () => jogoTurbo() },
+  { id: "memoria", nome: "Memória", icone: "🧠", desc: "Vire as cartas e encontre cada palavra com sua tradução.", cor: ["#10B981", "#0EA5E9"], fn: () => jogoMemoria(), pro: true },
+  { id: "turbo", nome: "Pares Turbo", icone: "🏎️", desc: "Ligue o máximo de pares que conseguir em 45 segundos.", cor: ["#EC4899", "#8B5CF6"], fn: () => jogoTurbo(), pro: true },
 ];
 
 function poolFliperama() {
@@ -28,6 +28,8 @@ function cabecalhoJogo(jogo, hud) {
   </div>`;
 }
 function abrirJogo(id) {
+  const jogo = JOGOS.find(j => j.id === id);
+  if (jogo.pro && !ehPro()) { ir("fliperama"); return abrirPaywall("jogos"); }
   document.body.classList.add("em-jogo");
   JOGOS.find(j => j.id === id).fn();
 }

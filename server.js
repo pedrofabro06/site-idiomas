@@ -1,5 +1,5 @@
 // ============================================================
-//  Servidor do Poliglota
+//  Servidor do DrPolygo
 //  - Entrega os arquivos do site
 //  - /api/tutor e /api/gerar: IA (Claude) para conversa e
 //    lições sob medida. A chave fica só aqui no servidor
@@ -10,8 +10,24 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import Anthropic from "@anthropic-ai/sdk";
+import * as banco from "./servidor/banco.js";
+import * as auth from "./servidor/auth.js";
 
 const PORT = process.env.PORT || 3000;
+
+// ---------- Planos (tudo ajustável por variáveis no Railway) ----------
+const num = (v, padrao) => (v !== undefined && v !== "" && !isNaN(Number(v)) ? Number(v) : padrao);
+const NOME_PLANO = process.env.NOME_PLANO || "Passaporte";
+const LIMITES = {
+  gratis: { tutor: num(process.env.LIMITE_GRATIS_TUTOR, 5), licao: num(process.env.LIMITE_GRATIS_LICOES, 1) },
+  pro: { tutor: num(process.env.LIMITE_PRO_TUTOR, 150), licao: num(process.env.LIMITE_PRO_LICOES, 15) },
+};
+const LICOES_SEM_CONTA = num(process.env.LICOES_SEM_CONTA, 2);   // lições liberadas antes de pedir conta
+const DIAS_POR_COMPRA = num(process.env.DIAS_POR_COMPRA, 31);    // 0 = vitalício
+const CHECKOUT_URL = (process.env.CHECKOUT_URL || "").trim();    // link de pagamento (Kiwify, Hotmart, Mercado Pago...)
+const PRECO_TEXTO = process.env.PRECO_TEXTO || "";               // ex.: "R$ 29,90 por mês"
+const WEBHOOK_TOKEN = (process.env.WEBHOOK_TOKEN || "").trim();
+const ADMINS = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase()).filter(Boolean);
 const RAIZ = path.dirname(fileURLToPath(import.meta.url));
 // Padrão: Claude Haiku 5.5, o modelo mais barato. Para trocar, defina AI_MODEL no Railway (ex.: claude-opus-5-5).
 const MODELO = process.env.AI_MODEL || "claude-haiku-5-5";
@@ -54,7 +70,7 @@ function servirArquivo(req, res) {
   const arquivo = path.join(RAIZ, path.normalize(caminho));
   const relativo = path.relative(RAIZ, arquivo);
   const primeiro = relativo.split(path.sep)[0];
-  if (relativo.startsWith("..") || primeiro.startsWith(".") || primeiro === "node_modules" || PRIVADOS.has(relativo)) {
+  if (relativo.startsWith("..") || primeiro.startsWith(".") || primeiro === "node_modules" || primeiro === "servidor" || PRIVADOS.has(relativo) || relativo.endsWith(".json") && relativo !== "manifest.json") {
     res.writeHead(404); return res.end("Não encontrado");
   }
   fs.readFile(arquivo, (erro, dados) => {
@@ -142,9 +158,23 @@ function erroAmigavel(erro) {
 }
 
 // ---------- Tutor ----------
-function promptTutor(idioma, nivel, modo, cenario) {
+// Personagens do laboratório do Doutor Polygo (o tutor fala como o mascote escolhido)
+const PERSONAGENS = {
+  kiko: "Kiko, a talking parrot who swallowed a dictionary and speaks 5 languages (sometimes mixes them when excited)",
+  lumi: "Lumi, a living drop of polyglot ink that changes color with each language",
+  tito: "Tito, a clever fox who memorizes words by sniffing books",
+  bubu: "Bubu, a cuddly teddy bear who believes every mistake deserves a hug",
+  mia: "Mia, a curious cat who woke up understanding French",
+  pingo: "Pingo, a penguin mail carrier who travels between countries delivering words",
+  bit: "Bit, a translator robot still learning to understand jokes",
+  draco: "Draco, a brave dragon who guards the Vault of Difficult Words",
+  luna: "Luna, a unicorn made of pure grammar whose horn glows at correct verbs",
+  oto: "Oto, an octopus with one language in each tentacle",
+};
+function promptTutor(idioma, nivel, modo, cenario, mascote = "kiko") {
   const lingua = IDIOMAS[idioma];
-  const base = `You are Kiko, a warm, encouraging and witty language tutor (a talking parrot) inside "Poliglota", a language-learning app for Brazilian Portuguese speakers.
+  const base = `You are ${PERSONAGENS[mascote] || PERSONAGENS.kiko}. You are one of the creatures living in Doctor Polygo's flying polygon-shaped language laboratory, and you work as a warm, encouraging and witty language tutor inside "DrPolygo", a language-learning app for Brazilian Portuguese speakers.
+Backstory (use lightly, only for flavor, never let it get in the way of teaching): Doctor Polygo's machine that taught every language in one second exploded, scattering the world's words; the student is his new Apprentice ("Aprendiz") helping recover them.
 The student is learning ${lingua} and is currently at CEFR level ${nivel}.`;
   const formatoCorrecao = `Formatting rules:
 - Write your main reply in ${lingua}, using vocabulary and grammar suited to level ${nivel}; a little above their level is good (comprehensible input). Keep it to 1-4 short sentences.
@@ -182,7 +212,8 @@ async function rotaTutor(req, res) {
     .slice(-20);
   while (msgs.length && msgs[0].role !== "user") msgs.shift();
   if (!msgs.length || msgs[msgs.length - 1].role !== "user") return responderJSON(res, 400, { erro: "Mensagem vazia." });
-  const texto = await perguntarClaude({ system: promptTutor(idioma, nivel, modo, cenario), messages: msgs, effort: "low" });
+  const mascote = PERSONAGENS[corpo.mascote] ? corpo.mascote : "kiko";
+  const texto = await perguntarClaude({ system: promptTutor(idioma, nivel, modo, cenario, mascote), messages: msgs, effort: "low" });
   responderJSON(res, 200, { texto });
 }
 
@@ -242,22 +273,197 @@ If the topic is inappropriate for a family-friendly app, pick a related safe top
   responderJSON(res, 200, d);
 }
 
-// ---------- Servidor ----------
-http.createServer(async (req, res) => {
+// ============================================================
+//  Contas, planos e painel
+// ============================================================
+const contasLigadas = () => !!banco.bancoAtivo() && !!(auth.GOOGLE_CLIENT_ID || auth.APPLE_CLIENT_ID || auth.DEV_LOGIN);
+const ehAdmin = u => !!u && !!u.email && ADMINS.includes(u.email.toLowerCase());
+
+async function usuarioDaSessao(req) {
+  if (!banco.bancoAtivo()) return null;
+  const id = auth.lerSessao(req);
+  return id ? await banco.usuarioPorId(id) : null;
+}
+function publico(u) {
+  return { id: u.id, email: u.email, nome: u.nome, foto: u.foto, plano: banco.planoEfetivo(u), proAte: u.pro_ate, admin: ehAdmin(u), novo: !!u.novo };
+}
+async function rotaEu(req, res) {
+  const u = await usuarioDaSessao(req);
+  if (!u) return responderJSON(res, 200, { usuario: null });
+  const plano = banco.planoEfetivo(u);
+  responderJSON(res, 200, { usuario: publico(u), uso: await banco.usoHoje(u.id), limites: LIMITES[plano] });
+}
+function rotaConfig(req, res) {
+  responderJSON(res, 200, {
+    ia: !!cliente,
+    contas: contasLigadas(),
+    google: auth.GOOGLE_CLIENT_ID || null,
+    apple: auth.APPLE_CLIENT_ID ? { clientId: auth.APPLE_CLIENT_ID, redirectURI: auth.APPLE_REDIRECT_URI || null } : null,
+    dev: auth.DEV_LOGIN,
+    licoesSemConta: LICOES_SEM_CONTA,
+    nomePlano: NOME_PLANO, preco: PRECO_TEXTO, checkout: CHECKOUT_URL || null,
+    limites: LIMITES,
+  });
+}
+async function concluirLogin(req, res, dadosProvedor, corpo) {
+  const perfil = corpo.perfil && typeof corpo.perfil === "object" ? corpo.perfil : {};
+  const u = await banco.entrarComProvedor({ ...dadosProvedor, perfil });
+  if (corpo.anon) await banco.vincularQuestionarios(String(corpo.anon).slice(0, 64), u.id);
+  if (u.novo && Object.keys(perfil).length) await banco.atualizarUsuario(u.id, { perfil });
+  auth.criarSessao(res, req, u.id);
+  responderJSON(res, 200, { usuario: publico(u), uso: await banco.usoHoje(u.id), limites: LIMITES[banco.planoEfetivo(u)] });
+}
+async function rotaLogin(req, res, provedor) {
+  const corpo = await lerCorpo(req);
+  let dados;
+  try {
+    if (provedor === "google") dados = { provedor, ...(await auth.verificarGoogle(String(corpo.credential || ""))) };
+    else if (provedor === "apple") {
+      const a = await auth.verificarApple(String(corpo.id_token || ""));
+      dados = { provedor, ...a, nome: typeof corpo.nome === "string" ? corpo.nome.slice(0, 80) : null };
+    } else if (provedor === "dev" && auth.DEV_LOGIN) {
+      const email = String(corpo.email || "teste@exemplo.com").slice(0, 120);
+      dados = { provedor: "google", sub: "dev-" + email, email, nome: String(corpo.nome || "Teste").slice(0, 80), foto: null };
+    } else return responderJSON(res, 404, { erro: "Login indisponível." });
+  } catch (erro) {
+    console.error("Login recusado:", erro.message);
+    return responderJSON(res, 401, { erro: "Não consegui confirmar seu login. Tente de novo." });
+  }
+  await concluirLogin(req, res, dados, corpo);
+}
+
+// Webhook de pagamento: Kiwify, Hotmart, Mercado Pago, Eduzz... cada um manda um formato.
+// Procuramos o e-mail do comprador e o tipo do evento de forma flexível e guardamos tudo no painel.
+function acharEmail(obj) {
+  const achados = [];
+  const visitar = (o, caminho) => {
+    if (!o || typeof o !== "object") return;
+    for (const [k, v] of Object.entries(o)) {
+      const c = caminho + "." + k.toLowerCase();
+      if (typeof v === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim())) achados.push({ c, v: v.trim() });
+      else if (typeof v === "object") visitar(v, c);
+    }
+  };
+  visitar(obj, "");
+  const preferido = achados.find(a => /buyer|customer|cliente|comprador|payer|subscriber/.test(a.c)) || achados.find(a => a.c.endsWith(".email")) || achados[0];
+  return preferido ? preferido.v.toLowerCase() : null;
+}
+function classificarEvento(obj) {
+  const valores = [];
+  const visitar = (o, nivel) => {
+    if (!o || typeof o !== "object" || nivel > 3) return;
+    for (const [k, v] of Object.entries(o)) {
+      if (typeof v === "string" && /^(event|evento|status|order_status|webhook_event_type|type|action|purchase_status)$/i.test(k)) valores.push(v.toLowerCase());
+      else if (typeof v === "object") visitar(v, nivel + 1);
+    }
+  };
+  visitar(obj, 0);
+  const texto = valores.join(" ");
+  if (/refund|reembols|chargeback|charged_back|cancel|expired|dispute|protest|estorn/.test(texto)) return { acao: "remover", evento: texto };
+  if (/approved|aprovad|paid|pago|complete|active|renewed|order_approved|purchase_approved/.test(texto)) return { acao: "liberar", evento: texto };
+  return { acao: "ignorar", evento: texto || "desconhecido" };
+}
+async function rotaWebhook(req, res) {
+  const url = new URL(req.url, "http://x");
+  const token = url.searchParams.get("token") || req.headers["x-hotmart-hottok"] || "";
+  if (!WEBHOOK_TOKEN || token !== WEBHOOK_TOKEN) return responderJSON(res, 401, { erro: "token inválido" });
+  const corpo = await lerCorpo(req, 256 * 1024);
+  const email = acharEmail(corpo);
+  const { acao, evento } = classificarEvento(corpo);
+  let resultado = acao;
+  if (email && acao === "liberar") { const r = await banco.liberarPlano(email, DIAS_POR_COMPRA); resultado = r.pendente ? "liberado (aguardando a pessoa criar a conta)" : "liberado"; }
+  if (email && acao === "remover") { await banco.removerPlano(email); resultado = "removido"; }
+  await banco.registrarPagamento({ email, origem: url.searchParams.get("origem") || "webhook", evento: evento.slice(0, 200), acao: email ? resultado : "sem e-mail no aviso", dados: corpo });
+  responderJSON(res, 200, { ok: true, email, acao: resultado });
+}
+
+async function rotaAdmin(req, res, rota) {
+  const u = await usuarioDaSessao(req);
+  if (!ehAdmin(u)) return responderJSON(res, 403, { erro: "Só para administradores." });
+  if (rota === "/api/admin/resumo") return responderJSON(res, 200, await banco.resumo());
+  if (rota === "/api/admin/usuarios") return responderJSON(res, 200, await banco.listarUsuarios(new URL(req.url, "http://x").searchParams.get("busca") || ""));
+  if (rota === "/api/admin/pagamentos") return responderJSON(res, 200, await banco.listarPagamentos());
+  if (rota === "/api/admin/plano" && req.method === "POST") {
+    const corpo = await lerCorpo(req);
+    const email = String(corpo.email || "").trim().toLowerCase();
+    if (!email) return responderJSON(res, 400, { erro: "Informe o e-mail." });
+    if (corpo.remover) await banco.removerPlano(email);
+    else await banco.liberarPlano(email, num(corpo.dias, 31));
+    await banco.registrarPagamento({ email, origem: "painel", evento: corpo.remover ? "remoção manual" : `liberação manual (${corpo.dias} dias)`, acao: corpo.remover ? "removido" : "liberado", dados: { por: u.email } });
+    return responderJSON(res, 200, { ok: true });
+  }
+  responderJSON(res, 404, { erro: "Rota não encontrada." });
+}
+
+// ============================================================
+//  Servidor
+// ============================================================
+async function tratar(req, res) {
   const rota = req.url.split("?")[0];
   if (!rota.startsWith("/api/")) return servirArquivo(req, res);
-  if (rota === "/api/status") return responderJSON(res, 200, { ia: !!cliente });
-  if (req.method !== "POST") return responderJSON(res, 405, { erro: "Use POST." });
-  if (!cliente) return responderJSON(res, 503, { erro: "A IA não está configurada no servidor (falta ANTHROPIC_API_KEY)." });
-  if (!dentroDoLimite(req)) return responderJSON(res, 429, { erro: "Você usou bastante a IA. Espere alguns minutos e tente de novo." });
   try {
-    if (rota === "/api/tutor") return await rotaTutor(req, res);
-    if (rota === "/api/gerar") return await rotaGerar(req, res);
+    if (rota === "/api/status") return responderJSON(res, 200, { ia: !!cliente });
+    if (rota === "/api/config") return rotaConfig(req, res);
+    if (rota === "/api/eu") return await rotaEu(req, res);
+    if (rota.startsWith("/api/admin/")) return await rotaAdmin(req, res, rota);
+    if (req.method !== "POST" && !(rota === "/api/progresso" && ["GET", "PUT"].includes(req.method))) return responderJSON(res, 405, { erro: "Método não permitido." });
+    if (rota === "/api/webhook/pagamento") return await rotaWebhook(req, res);
+    if (rota === "/api/auth/google") return await rotaLogin(req, res, "google");
+    if (rota === "/api/auth/apple") return await rotaLogin(req, res, "apple");
+    if (rota === "/api/auth/dev") return await rotaLogin(req, res, "dev");
+    if (rota === "/api/auth/sair") { auth.encerrarSessao(res); return responderJSON(res, 200, { ok: true }); }
+
+    if (rota === "/api/questionario") {
+      if (!banco.bancoAtivo()) return responderJSON(res, 200, { ok: true });
+      if (!dentroDoLimite(req)) return responderJSON(res, 429, { erro: "Muitos pedidos." });
+      const corpo = await lerCorpo(req);
+      const r = corpo.respostas && typeof corpo.respostas === "object" ? corpo.respostas : {};
+      const limpo = Object.fromEntries(Object.entries(r).slice(0, 20).map(([k, v]) => [String(k).slice(0, 40), String(v).slice(0, 120)]));
+      const u = await usuarioDaSessao(req);
+      await banco.salvarQuestionario(String(corpo.anon || "").slice(0, 64), limpo, u ? u.id : null);
+      return responderJSON(res, 200, { ok: true });
+    }
+
+    if (rota === "/api/progresso") {
+      const u = await usuarioDaSessao(req);
+      if (!u) return responderJSON(res, 401, { erro: "Entre na sua conta." });
+      if (req.method === "GET") return responderJSON(res, 200, (await banco.lerProgresso(u.id)) || { estado: null });
+      const corpo = await lerCorpo(req, 900 * 1024);
+      if (!corpo.estado || typeof corpo.estado !== "object") return responderJSON(res, 400, { erro: "Progresso inválido." });
+      await banco.salvarProgresso(u.id, corpo.estado);
+      return responderJSON(res, 200, { ok: true });
+    }
+
+    if (rota === "/api/tutor" || rota === "/api/gerar") {
+      if (!cliente) return responderJSON(res, 503, { erro: "A IA não está configurada no servidor (falta ANTHROPIC_API_KEY)." });
+      if (!dentroDoLimite(req)) return responderJSON(res, 429, { erro: "Muitos pedidos seguidos. Espere alguns minutos e tente de novo." });
+      const tipo = rota === "/api/tutor" ? "tutor" : "licao";
+      let u = null;
+      if (contasLigadas()) {
+        // Com contas ligadas, a IA exige login e respeita o limite diário do plano
+        u = await usuarioDaSessao(req);
+        if (!u) return responderJSON(res, 401, { erro: "Entre na sua conta para usar a IA.", codigo: "login" });
+        const plano = banco.planoEfetivo(u);
+        const usados = (await banco.usoHoje(u.id))[tipo] || 0;
+        if (usados >= LIMITES[plano][tipo]) {
+          return responderJSON(res, 402, { erro: plano === "pro" ? "Você atingiu o limite diário. Volta amanhã!" : `Você usou as ${LIMITES.gratis[tipo]} ${tipo === "tutor" ? "mensagens" : "lições"} grátis de hoje.`, codigo: "limite", plano });
+        }
+      }
+      if (tipo === "tutor") await rotaTutor(req, res); else await rotaGerar(req, res);
+      if (u && res.statusCode === 200) await banco.somarUso(u.id, tipo);
+      return;
+    }
     responderJSON(res, 404, { erro: "Rota não encontrada." });
   } catch (erro) {
     if (erro.message === "grande" || erro.message === "json") return responderJSON(res, 400, { erro: "Pedido inválido." });
-    console.error("Erro na IA:", erro.status || "", erro?.error?.error?.message || erro.message);
+    console.error("Erro:", erro.status || "", erro?.error?.error?.message || erro.message);
     const [status, msg] = erroAmigavel(erro);
-    responderJSON(res, status, { erro: msg });
+    if (!res.headersSent) responderJSON(res, status, { erro: msg });
   }
-}).listen(PORT, () => console.log(`Poliglota na porta ${PORT} · IA ${cliente ? "ligada (" + MODELO + ")" + (WORKSPACE ? " · workspace " + WORKSPACE : "") : "desligada"}`));
+}
+
+const tipoBanco = await banco.iniciarBanco().catch(erro => { console.error("Banco de dados indisponível:", erro.message); return null; });
+http.createServer(tratar).listen(PORT, () => {
+  console.log(`DrPolygo na porta ${PORT} · IA ${cliente ? "ligada (" + MODELO + ")" + (WORKSPACE ? " · workspace " + WORKSPACE : "") : "desligada"}`);
+  console.log(`Banco: ${tipoBanco || "desligado"} · Contas: ${contasLigadas() ? "ligadas" : "desligadas"}${auth.GOOGLE_CLIENT_ID ? " · Google" : ""}${auth.APPLE_CLIENT_ID ? " · Apple" : ""}${auth.DEV_LOGIN ? " · LOGIN DE TESTE ATIVO" : ""}`);
+});

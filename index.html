@@ -4,9 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#6D28D9">
-  <meta name="description" content="Poliglota: aprenda inglês, espanhol, francês, italiano e alemão jogando.">
-  <title>Poliglota</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌍</text></svg>">
+  <meta name="description" content="DrPolygo: aprenda inglês, espanhol, francês, italiano e alemão com o Doutor Polygo e seus mascotes, jogando um pouco por dia.">
+  <title>DrPolygo · Aprenda idiomas com o Doutor Polygo</title>
+  <meta property="og:title" content="DrPolygo · Aprenda idiomas com o Doutor Polygo">
+  <meta property="og:description" content="Trilha do A1 ao C1, revisão inteligente, pronúncia com nota e um tutor com IA. Comece grátis.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://drpolygo.com/">
+  <link rel="canonical" href="https://drpolygo.com/">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,4 90,27 90,73 50,96 10,73 10,27' fill='%236D28D9'/><polygon points='50,18 78,34 78,66 50,82 22,66 22,34' fill='%23EC4899'/><text x='50' y='63' font-size='34' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>Dr</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet">
@@ -17,7 +22,7 @@
 
   <header class="topo">
     <div class="topo-interno">
-      <a class="marca" href="#inicio"><span class="marca-lumi" id="marcaLumi"></span><span class="marca-nome">Poliglota</span></a>
+      <a class="marca" href="#inicio"><span class="marca-lumi" id="marcaLumi"></span><span class="marca-nome">Dr<b>Polygo</b></span></a>
       <nav class="nav" id="nav">
         <a href="#inicio" data-r="inicio"><span class="nav-ic">🏠</span><b>Início</b></a>
         <a href="#trilha" data-r="trilha"><span class="nav-ic">🗺️</span><b>Trilha</b></a>
@@ -31,6 +36,7 @@
         <button class="pill" id="pillStreak" title="Ofensiva">🔥 <b id="streak">0</b></button>
         <button class="pill" id="pillMoedas" title="Moedas">🪙 <b id="moedas">0</b></button>
         <button class="pill" id="pillVidas" title="Vidas">❤️ <b id="vidas">5</b></button>
+        <button class="pill pill-conta" id="pillConta" title="Sua conta" hidden></button>
       </div>
     </div>
     <div class="faixa" aria-hidden="true"></div>
@@ -38,7 +44,7 @@
 
   <main id="app"></main>
 
-  <footer class="rodape">Poliglota · seu progresso fica salvo neste navegador</footer>
+  <footer class="rodape">DrPolygo · <a href="#planos">Planos</a> · <a href="/termos.html">Termos de uso</a> · <a href="/privacidade.html">Privacidade</a></footer>
   <div id="toasts" aria-live="polite"></div>
 
   <script src="data.js"></script>
@@ -51,6 +57,8 @@
   <script src="js/ia.js"></script>
   <script src="js/fliperama.js"></script>
   <script src="js/telas.js"></script>
+  <script src="js/conta.js"></script>
+  <script src="js/historia.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

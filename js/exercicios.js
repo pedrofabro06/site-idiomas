@@ -85,6 +85,8 @@ function montarTreino() {
 
 // ---------- Partida ----------
 function iniciarLicao({ tema = null, nivel = 0, treino = false, revisao = false, ia = false } = {}) {
+  // Depois das primeiras lições grátis, pede uma conta para continuar (e salvar na nuvem)
+  if (precisaConta()) return abrirLogin({ obrigatorio: true, titulo: "Você está indo muito bem! 🎉", texto: "Crie sua conta grátis para salvar seu progresso e continuar a trilha. Leva 5 segundos." });
   atualizarVidas();
   const semCusto = treino || revisao; // treino e revisão não gastam vidas
   if (!semCusto && E.vidas <= 0) return modalSemVidas();

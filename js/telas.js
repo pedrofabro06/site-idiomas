@@ -16,6 +16,9 @@ const TELAS = {
   tutor: () => telaTutor(),
   licaoia: () => telaLicaoIA(),
   metodo: () => telaMetodo(),
+  planos: () => telaPlanos(),
+  historia: () => telaHistoria(),
+  admin: () => telaAdmin(),
   fliperama: () => telaFliperama(),
   loja: () => telaLoja(),
   perfil: () => telaPerfil(),
@@ -53,6 +56,18 @@ function atualizarTopo() {
   const pi = $("#pillIdioma");
   if (pi) pi.innerHTML = E.idioma ? `${svgBandeira(E.idioma, "bandeira mini")}<b>${IDIOMAS[E.idioma].nome}</b>` : `🌐 <b>Idioma</b>`;
   $("#pillStreak")?.classList.toggle("apagado", E.ultimoDia !== hoje());
+  // Botão da conta: aparece só quando o servidor tem contas ligadas
+  const pc = $("#pillConta");
+  if (pc && typeof CONFIG !== "undefined") {
+    pc.hidden = !CONFIG.contas;
+    if (CONFIG.contas) {
+      const u = CONTA.usuario;
+      pc.classList.toggle("pro", !!u && u.plano === "pro");
+      pc.innerHTML = u
+        ? (u.foto ? `<img src="${esc(u.foto)}" alt="" referrerpolicy="no-referrer">` : `<span>${E.avatar}</span>`) + (u.plano === "pro" ? `<b class="mini-selo">🎫</b>` : "")
+        : `👤 <b>Entrar</b>`;
+    }
+  }
 }
 
 function selecionarIdioma(cod) {
@@ -143,7 +158,7 @@ function telaInicio() {
           : `Aprenda idiomas como quem <span class="destaque">zera um jogo</span>`}</h1>
         <p class="sub">${idi
           ? (prox ? `Sua próxima fase é <b>${prox.tema.icone} ${prox.tema.titulo}</b>. Mantenha a ofensiva acesa e suba de nível.` : "Você completou a trilha inteira! Que tal o fliperama ou um idioma novo?")
-          : "Trilha de fases, vidas, moedas, conquistas e minijogos. Cinco idiomas, cada um com as cores reais da sua bandeira."}</p>
+          : "Uma explosão espalhou as palavras do mundo e o Doutor Polygo precisa de um aprendiz para recuperá-las. Trilha de fases, mascotes, minijogos e um tutor com IA, em cinco idiomas."}</p>
         <div class="hero-acoes">
           ${idi
             ? `<button class="btn grande" id="hContinuar">${prox ? "▶ Continuar trilha" : "🕹️ Ir ao fliperama"}</button>
@@ -156,8 +171,9 @@ function telaInicio() {
       </div>
       <div class="hero-palco">
         <div class="orbita">${Object.keys(IDIOMAS).map((c, i) => `<span class="orb" style="--i:${i}">${svgBandeira(c, "bandeira")}</span>`).join("")}</div>
-        ${lumi("feliz", "grande flutua")}
-        <div class="balao-lumi">${idi ? esc(idi.vamos) : MASCOTES[E.mascote]?.apresentacao || MASCOTES.kiko.apresentacao}</div>
+        ${desenharDrPolygo("feliz", "grande flutua")}
+        <div class="hero-mascote">${lumi("festa", "mini flutua")}</div>
+        <div class="balao-lumi">${idi ? esc(idi.vamos) : "Olá, Aprendiz! Eu sou o Doutor Polygo.<br>Preciso da sua ajuda!"}</div>
       </div>
     </section>
 
@@ -200,8 +216,18 @@ function telaInicio() {
       <div class="grade-idiomas">${cardsIdiomas()}</div>
     </section>
 
+    <section class="teaser-historia">
+      <div class="th-arte">${desenharDrPolygo("uau", "media")}${desenharMascote("kiko", "festa", "mini")}${desenharMascote("bit", "feliz", "mini")}${desenharMascote("draco", "uau", "mini")}</div>
+      <div>
+        <span class="selo">📖 A história</span>
+        <h2>KABUM! As palavras do mundo fugiram</h2>
+        <p class="sub">O Doutor Polygo tentou criar uma máquina que ensinava qualquer idioma em um segundo. Ela explodiu, espalhou as palavras pelo mundo e deu vida aos mascotes do laboratório. Cada lição sua recupera um pedaço do que foi perdido.</p>
+        <a class="btn secundario" href="#historia">Ler a história completa</a>
+      </div>
+    </section>
+
     <section>
-      <div class="titulo-secao"><h2>O método Poliglota</h2><p class="sub">Não existe uma mágica única. O que a pesquisa mostra é que algumas técnicas funcionam muito melhor que as outras, e o Poliglota junta todas elas.</p></div>
+      <div class="titulo-secao"><h2>O método Dr. Polygo</h2><p class="sub">Não existe uma mágica única. O que a pesquisa mostra é que algumas técnicas funcionam muito melhor que as outras, e o DrPolygo junta todas elas.</p></div>
       <div class="grade-como">${PILARES.slice(0, 6).map((p, i) => `
         <div class="como-card" style="--d:${i}"><span>${p.ic}</span><b>${p.nome}</b><p>${p.curto}</p></div>`).join("")}
       </div>
@@ -299,7 +325,7 @@ function telaTrilha(modo = "trilha") {
       const feitos = temasNivel.filter(x => progTema(x.id).licao >= 4).length;
       html += `<div class="cabecalho-nivel" id="nivel-${t.nivel}">
         <span class="selo-nivel pequeno">${t.nivel}</span>
-        <div><b>${info.nome}</b><small>${info.desc}</small></div>
+        <div><b>Face ${ORDEM_NIVEIS.indexOf(t.nivel) + 1} do Poliedro · ${info.nome}</b><small>${info.desc}</small></div>
         <span class="cn-progresso">${feitos}/${temasNivel.length} unidades</span>
       </div>`;
     }
@@ -439,15 +465,23 @@ function telaFliperama() {
       </div>
       ${lumi("festa", "media flutua")}
     </section>
-    <div class="grade-jogos">${JOGOS.map((j, n) => `
-      <button class="card-jogo" data-jogo="${j.id}" style="--g1:${j.cor[0]};--g2:${j.cor[1]};animation-delay:${n * 80}ms">
+    <div class="grade-jogos">${JOGOS.map((j, n) => {
+      const travado = j.pro && !ehPro();
+      return `
+      <button class="card-jogo ${travado ? "so-pro" : ""}" data-jogo="${j.id}" style="--g1:${j.cor[0]};--g2:${j.cor[1]};animation-delay:${n * 80}ms">
+        ${travado ? `<span class="selo-passaporte canto">🎫 ${NOME_PLANO()}</span>` : ""}
         <span class="cj-ic">${j.icone}</span>
         <b>${j.nome}</b>
         <p>${j.desc}</p>
-        <span class="cj-rodape"><span>🏆 Recorde: <b>${E.recordes[j.id] || 0}</b></span><span class="cj-play">Jogar ▶</span></span>
-      </button>`).join("")}
+        <span class="cj-rodape"><span>🏆 Recorde: <b>${E.recordes[j.id] || 0}</b></span><span class="cj-play">${travado ? "🔒 Desbloquear" : "Jogar ▶"}</span></span>
+      </button>`;
+    }).join("")}
     </div>`);
-  $$("[data-jogo]").forEach(b => b.onclick = () => abrirJogo(b.dataset.jogo));
+  $$("[data-jogo]").forEach(b => b.onclick = () => {
+    const j = JOGOS.find(x => x.id === b.dataset.jogo);
+    if (j.pro && !ehPro()) return abrirPaywall("jogos");
+    abrirJogo(j.id);
+  });
 }
 
 // ---------- Loja ----------
@@ -517,7 +551,7 @@ function telaLoja() {
       toast("🎉", `${m.nome} é seu!`, m.desc);
     }
     E.mascote = k;
-    $("#marcaLumi").innerHTML = lumi("feliz", "marca-svg");
+    desenharMarca();
     checarTudo();
     salvar();
     telaLoja();
@@ -555,6 +589,7 @@ function telaPerfil() {
       </div>
     </section>
 
+    ${cartaoConta()}
     <div class="grade-stats">
       <div class="stat"><span>🔥</span><b>${E.streak}</b><small>dias de ofensiva</small></div>
       <div class="stat"><span>⚡</span><b>${E.xp}</b><small>XP total</small></div>
@@ -607,13 +642,14 @@ function telaPerfil() {
         <button class="btn perigo pequeno" id="pReset">Apagar tudo</button></div>
     </div>`);
 
+  ligarCartaoConta();
   $("#pNome").onchange = e => { E.nome = e.target.value.trim() || "Você"; salvar(); toast("✏️", "Nome salvo", E.nome); };
   $$("#pMeta button").forEach(b => b.onclick = () => { E.meta = +b.dataset.v; salvar(); telaPerfil(); });
   $("#pSom").onclick = () => { E.som = !E.som; salvar(); som("clique"); telaPerfil(); };
   $$("[data-masc]").forEach(b => b.onclick = () => {
     E.mascote = b.dataset.masc;
     salvar();
-    $("#marcaLumi").innerHTML = lumi("feliz", "marca-svg");
+    desenharMarca();
     toast("🐦", `${nomeMascote()} agora te acompanha!`, MASCOTES[E.mascote].desc);
     telaPerfil();
   });
@@ -644,7 +680,7 @@ function telaPerfil() {
 // ---------- O método (com a ciência por trás) ----------
 const PILARES = [
   { ic: "🧠", nome: "Repetição espaçada", curto: "Cada palavra volta para revisão logo antes de você esquecer. Acertou? O intervalo aumenta. Errou? Ela volta logo.",
-    longo: "Em 1885, Hermann Ebbinghaus mediu a curva do esquecimento: perdemos rápido o que acabamos de aprender. Revisar em intervalos cada vez maiores é uma das técnicas com mais evidência em toda a pesquisa sobre aprendizagem (Cepeda e colegas, 2006; Dunlosky e colegas, 2013). O Poliglota usa um algoritmo inspirado no SM-2, o mesmo princípio do Anki.",
+    longo: "Em 1885, Hermann Ebbinghaus mediu a curva do esquecimento: perdemos rápido o que acabamos de aprender. Revisar em intervalos cada vez maiores é uma das técnicas com mais evidência em toda a pesquisa sobre aprendizagem (Cepeda e colegas, 2006; Dunlosky e colegas, 2013). O DrPolygo usa um algoritmo inspirado no SM-2, o mesmo princípio do Anki.",
     onde: "Revisão inteligente", rota: "revisao" },
   { ic: "🎯", nome: "Recordação ativa", curto: "Tentar lembrar fixa muito mais do que reler. Por isso você escreve, monta frases e fala, em vez de só reconhecer.",
     longo: "É o efeito de teste (Roediger e Karpicke, 2006): quem se testou lembrou muito mais uma semana depois do que quem só releu o conteúdo. Conforme a palavra amadurece na revisão, os exercícios passam de reconhecer para produzir.",
@@ -677,7 +713,7 @@ function telaMetodo() {
     <section class="secao-topo">
       <div><span class="selo">📘 O método</span>
       <h1>Como aprender um idioma <span class="destaque">de verdade</span></h1>
-      <p class="sub">Não existe um único método mágico. Mas décadas de pesquisa sobre memória e aquisição de idiomas apontam técnicas que funcionam muito melhor do que estudar listas ou só assistir aulas. O Poliglota foi montado em cima delas.</p></div>
+      <p class="sub">Não existe um único método mágico. Mas décadas de pesquisa sobre memória e aquisição de idiomas apontam técnicas que funcionam muito melhor do que estudar listas ou só assistir aulas. O DrPolygo foi montado em cima delas.</p></div>
       ${lumi("uau", "media flutua")}
     </section>
     <div class="pilares">${PILARES.map((p, i) => `

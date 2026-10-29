@@ -1,5 +1,5 @@
 // ============================================================
-//  Conteúdo do Poliglota
+//  Conteúdo do DrPolygo
 //  Palavra: [português, inglês, espanhol, francês, italiano, alemão, emoji]
 //  Frase:   [português, inglês, espanhol, francês, italiano, alemão]
 // ============================================================

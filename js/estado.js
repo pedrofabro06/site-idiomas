@@ -55,6 +55,7 @@ let E = carregarEstado();
 function salvar() {
   try { localStorage.setItem(CHAVE, JSON.stringify(E)); } catch {}
   if (typeof atualizarTopo === "function") atualizarTopo();
+  if (typeof agendarSync === "function") agendarSync(); // com conta: envia para a nuvem
 }
 
 // ---------- Datas ----------

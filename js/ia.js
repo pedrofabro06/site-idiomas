@@ -17,8 +17,23 @@ async function checarIA() {
 async function chamarIA(rota, corpo) {
   const r = await fetch("/api/" + rota, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.erro || "A IA não respondeu. Tente de novo.");
+  if (!r.ok) {
+    const erro = new Error(j.erro || "A IA não respondeu. Tente de novo.");
+    erro.codigo = j.codigo || null;
+    // Sem conta: pede login. Limite do dia: mostra o plano pago.
+    if (j.codigo === "login") abrirLogin({ titulo: "Entre para usar a IA", texto: "A IA é gratuita para quem tem conta, com mensagens diárias. Leva 5 segundos." });
+    if (j.codigo === "limite") { if (j.plano === "pro") toast("⏳", "Limite de hoje atingido", "Amanhã tem mais!"); else abrirPaywall(rota === "tutor" ? "tutor" : "licao"); }
+    throw erro;
+  }
+  // Conta o uso localmente para mostrar quanto resta hoje
+  if (logado()) { const tipo = rota === "tutor" ? "tutor" : "licao"; CONTA.uso[tipo] = (CONTA.uso[tipo] || 0) + 1; }
   return j;
+}
+function textoRestante(tipo) {
+  const r = restanteIA(tipo);
+  if (!r) return "";
+  const nome = tipo === "tutor" ? (r.limite === 1 ? "mensagem" : "mensagens") : (r.limite === 1 ? "lição" : "lições");
+  return `${ehPro() ? "🎫" : "🎟️"} ${r.resta} de ${r.limite} ${nome} hoje`;
 }
 const AVISO_SEM_IA = `<div class="aviso-ia"><b>🔌 A IA ainda não está ligada.</b>
   <p>Para ativar, o dono do site precisa colocar a chave da API da Anthropic no Railway, na variável <code>ANTHROPIC_API_KEY</code>. Enquanto isso, a trilha, a revisão, a pronúncia e o fliperama funcionam normalmente.</p></div>`;
@@ -69,7 +84,8 @@ async function telaTutor() {
     <div class="chat">
       <div class="chat-topo">
         ${lumi("feliz", "mini")}
-        <div><b>${nomeMascote()} · tutor de ${idi.nome}</b><small>Nível ${nivelAtual()} · ${MODOS_TUTOR[ch.modo].desc}</small></div>
+        <div><b>${nomeMascote()} · tutor de ${idi.nome}</b><small>Nível ${nivelAtual()} · ${MODOS_TUTOR[ch.modo].desc}</small>
+          ${CONFIG.contas ? `<small class="restante" id="tRestante">${logado() ? textoRestante("tutor") : "🔑 Entre na sua conta para conversar"}</small>` : ""}</div>
         <button class="btn texto pequeno" id="tLimpar" title="Nova conversa">🗑️ Nova conversa</button>
       </div>
       <div class="chips" id="tModos">${Object.entries(MODOS_TUTOR).map(([k, m]) => `<button class="chip ${ch.modo === k ? "on" : ""}" data-modo="${k}">${m.nome}</button>`).join("")}</div>
@@ -125,6 +141,7 @@ async function telaTutor() {
     e.preventDefault();
     const texto = input.value.trim();
     if (!texto || !ok) return;
+    if (CONFIG.contas && !logado()) return abrirLogin({ titulo: "Entre para conversar com a IA", texto: "O tutor é gratuito para quem tem conta, com mensagens diárias." });
     input.value = "";
     ch.msgs.push({ role: "user", content: texto });
     bolha("user", texto, true);
@@ -133,17 +150,21 @@ async function telaTutor() {
     caixa.scrollTop = caixa.scrollHeight;
     $("#tEnviar").disabled = true;
     try {
-      const r = await chamarIA("tutor", { idioma: E.idioma, nivel: nivelAtual(), modo: ch.modo, cenario: ch.cenario, mensagens: ch.msgs.slice(-20) });
+      const r = await chamarIA("tutor", { idioma: E.idioma, nivel: nivelAtual(), modo: ch.modo, cenario: ch.cenario, mascote: E.mascote, mensagens: ch.msgs.slice(-20) });
       pensando.remove();
       ch.msgs.push({ role: "assistant", content: r.texto });
       if (ch.msgs.length > 40) ch.msgs.splice(0, ch.msgs.length - 40);
       bolha("assistant", r.texto, true);
       if (ch.modo !== "duvidas") falar(parteNoIdioma(r.texto));
       ganharXP(2);
+      const rest = $("#tRestante");
+      if (rest) rest.textContent = textoRestante("tutor");
     } catch (erro) {
       pensando.remove();
       ch.msgs.pop();
-      bolha("assistant", "⚠️ " + erro.message);
+      // Login e limite já abrem a janela certa; os outros erros aparecem no chat
+      if (erro.codigo) { const ult = [...caixa.querySelectorAll(".msg.user")].pop(); if (ult) ult.remove(); input.value = texto; }
+      else bolha("assistant", "⚠️ " + erro.message);
     } finally {
       salvar();
       const be = $("#tEnviar");
@@ -177,6 +198,7 @@ async function telaLicaoIA() {
         <div class="segmentado" id="lNivel">${ORDEM_NIVEIS.map(n => `<button type="button" class="${n === nivel ? "on" : ""}" data-v="${n}">${n}</button>`).join("")}</div>
       </label>
       <button class="btn grande" id="lGerar" ${ok ? "" : "disabled"}>✨ Criar minha lição</button>
+      ${CONFIG.contas ? `<small class="restante centro">${logado() ? textoRestante("licao") : "🔑 Entre na sua conta para criar lições"}${logado() && !ehPro() ? ` · <a href="#planos">mais com o ${NOME_PLANO()}</a>` : ""}</small>` : ""}
     </form>
     ${salvas.length ? `<h2>Suas lições criadas</h2><div class="grade-ia">${salvas.map((l, i) => `
       <button class="card-ia" data-l="${i}"><span>${esc(l.dados.emoji || "✨")}</span><b>${esc(l.dados.titulo)}</b><small>${l.nivel} · ${esc(l.tema)}</small></button>`).join("")}</div>` : ""}`);
@@ -189,6 +211,7 @@ async function telaLicaoIA() {
     e.preventDefault();
     const tema = $("#lTema").value.trim();
     if (!tema || !ok) return tremer($("#lTema"));
+    if (CONFIG.contas && !logado()) return abrirLogin({ titulo: "Entre para criar lições com IA", texto: "Quem tem conta grátis cria lições sob medida todo dia." });
     const carregando = abrirModal(`<div class="centro">${lumi("uau", "media flutua")}</div><h2>Criando sua lição...</h2>
       <p class="sub">O ${nomeMascote()} está escrevendo um texto sobre <b>${esc(tema)}</b> no nível ${nivelEscolhido}. Leva uns segundos.</p>
       <div class="barra"><div class="carregando"></div></div>`);
@@ -201,7 +224,7 @@ async function telaLicaoIA() {
       mostrarLicaoIA(licao);
     } catch (erro) {
       carregando.fechar();
-      toast("⚠️", "Não deu certo", erro.message);
+      if (!erro.codigo) toast("⚠️", "Não deu certo", erro.message);
     }
   };
 }

@@ -214,6 +214,54 @@ const MASCOTES = {
   oto: { nome: "Oto", desc: "o polvo de 8 idiomas", nivel: 12, preco: 520, apresentacao: "Oi! Eu sou o Oto.<br>Um idioma por braço!" },
 };
 const nomeMascote = () => (MASCOTES[E.mascote] || MASCOTES.kiko).nome;
+
+// A origem de cada mascote na história do Doutor Polygo
+const HISTORIA_MASCOTES = {
+  kiko: "O papagaio de estimação do Doutor. Na hora da explosão, estava bicando um dicionário e engoliu as 5 línguas de uma vez. Quando fica nervoso, mistura todas na mesma frase.",
+  lumi: "Uma gota de Tinta Poliglota que pulou do tubo de ensaio. Ela muda de cor conforme o idioma que está por perto, e é por isso que o laboratório inteiro muda de cor junto.",
+  tito: "Uma raposa que vivia roubando biscoitos do laboratório. A explosão deixou ele esperto demais: agora decora palavras só de cheirar o livro.",
+  bubu: "O ursinho de pelúcia que o Doutor tinha desde criança. Ganhou vida com o raio da máquina e virou o oficial de abraços: todo erro merece um.",
+  mia: "Estava dormindo em cima da Máquina Babelatrônica quando ela explodiu. Acordou entendendo francês e fingindo que não entende português.",
+  pingo: "O pinguim carteiro do Poliedro. Viaja de face em face entregando as palavras que você recupera, sempre de gravata e sempre atrasado.",
+  bit: "O robô que o Doutor construiu para catalogar cada palavra perdida. Traduz qualquer coisa, menos piada: ainda está aprendendo humor.",
+  draco: "O guardião do Cofre das Palavras Difíceis, lá no último andar do Poliedro. Cospe fogo em quem tenta pular de nível sem estudar.",
+  luna: "Uma unicórnio feita de gramática pura, nascida de um raio que atravessou a biblioteca. Seu chifre brilha quando alguém acerta o verbo.",
+  oto: "O polvo do aquário do laboratório. Cada tentáculo absorveu um idioma na explosão, e sobraram três braços que ele quer preencher com você.",
+};
+
+// ---------- O Doutor Polygo (cabeça de hexágono, óculos enormes, cabelo de cientista maluco) ----------
+function desenharDrPolygo(humor = "feliz", classe = "") {
+  const bocas = {
+    feliz: '<path d="M52 79 Q60 86 68 79" fill="none" stroke="#7A3E1C" stroke-width="3" stroke-linecap="round"/>',
+    triste: '<path d="M53 84 Q60 78 67 84" fill="none" stroke="#7A3E1C" stroke-width="3" stroke-linecap="round"/>',
+    uau: '<ellipse cx="60" cy="82" rx="4.5" ry="5.5" fill="#7A3E1C"/>',
+    festa: '<path d="M50 78 Q60 94 70 78 Z" fill="#7A3E1C"/><path d="M54 84 Q60 89 66 84" fill="#FF6B81"/>',
+  };
+  return `<svg class="lumi drpolygo humor-${humor} ${classe}" viewBox="0 0 120 130" aria-hidden="true">
+    <ellipse cx="60" cy="126" rx="30" ry="4" class="lumi-sombra"/>
+    <g class="lumi-corpo">
+      <path d="M26 130 L33 100 Q60 88 87 100 L94 130Z" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="2"/>
+      <path d="M50 96 L60 116 L70 96Z" style="fill:var(--c1)"/>
+      <path d="M48 99 L58 104 L48 109Z M72 99 L62 104 L72 109Z" style="fill:var(--c2)"/><circle cx="60" cy="104" r="3" style="fill:var(--c2)"/>
+      <polygon points="80,108 86,111 86,117 80,120 74,117 74,111" style="fill:var(--c2)" opacity=".85"/>
+      <path d="M26 46 C10 40 12 20 28 26 C24 10 42 6 46 20 C48 4 70 4 72 20 C76 6 96 10 92 26 C108 20 110 40 94 46 C100 34 90 30 86 34 C84 24 74 24 72 30 C66 22 54 22 48 30 C46 24 36 24 34 34 C30 30 20 34 26 46Z" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.5"/>
+      <polygon points="60,24 90,41 90,75 60,92 30,75 30,41" fill="#FFD8B5" stroke="#E8A877" stroke-width="2.5" stroke-linejoin="round"/>
+      <circle cx="31" cy="60" r="5" fill="#FFC79A" stroke="#E8A877" stroke-width="1.5"/><circle cx="89" cy="60" r="5" fill="#FFC79A" stroke="#E8A877" stroke-width="1.5"/>
+      <g class="lumi-olho"><circle cx="46" cy="57" r="11" fill="#fff" opacity=".85"/><circle class="pupila" cx="46" cy="57" r="4.5" fill="#1b1530"/></g>
+      <g class="lumi-olho"><circle cx="74" cy="57" r="11" fill="#fff" opacity=".85"/><circle class="pupila" cx="74" cy="57" r="4.5" fill="#1b1530"/></g>
+      <circle cx="46" cy="57" r="11.5" fill="none" stroke="#1b1530" stroke-width="3"/><circle cx="74" cy="57" r="11.5" fill="none" stroke="#1b1530" stroke-width="3"/>
+      <path d="M57.5 56 Q60 53 62.5 56" fill="none" stroke="#1b1530" stroke-width="3"/>
+      ${humor === "triste" ? '<path d="M35 42 L53 38 M85 42 L67 38" stroke="#94A3B8" stroke-width="3" stroke-linecap="round"/>' : humor === "uau" ? '<path d="M36 40 Q46 32 56 40 M64 40 Q74 32 84 40" fill="none" stroke="#94A3B8" stroke-width="3" stroke-linecap="round"/>' : ""}
+      <circle cx="38" cy="73" r="4.5" fill="#ff7aa8" opacity=".45"/><circle cx="82" cy="73" r="4.5" fill="#ff7aa8" opacity=".45"/>
+      <path d="M47 73 Q53 67 60 72 Q67 67 73 73 Q67 76 60 74 Q53 76 47 73Z" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.2"/>
+      ${bocas[humor] || bocas.feliz}
+    </g>
+  </svg>`;
+}
+function desenharMarca() {
+  const m = document.getElementById("marcaLumi");
+  if (m) m.innerHTML = desenharDrPolygo("feliz", "marca-svg");
+}
 let lumiId = 0;
 function desenharMascote(chave, humor = "feliz", classe = "") {
   if (chave === "lumi") return desenharLumi(humor, classe);
