@@ -39,6 +39,7 @@ function mostrarRota() {
   (TELAS[nome] || TELAS.inicio)();
   marcarNav(["revisao", "pronuncia", "tutor", "licaoia", "metodo"].includes(nome) ? "praticar" : nome === "fundamentos" ? "trilha" : nome);
   atualizarTopo();
+  companheiroNaRota(nome);
 }
 addEventListener("hashchange", mostrarRota);
 
@@ -517,6 +518,11 @@ function telaFliperama() {
       </div>
       ${lumi("festa", "media flutua")}
     </section>
+    ${(() => { const melhor = JOGOS.filter(j => E.recordes[j.id]).sort((a, b) => E.recordes[b.id] - E.recordes[a.id])[0]; return dicaMascote([
+      "Os jogos usam as palavras que você já aprendeu. Bora bater recorde?",
+      melhor ? `Seu recorde no <b>${melhor.nome}</b> é ${E.recordes[melhor.id]}. Duvido você passar!` : "Você ainda não tem nenhum recorde. Escolhe um jogo que eu fico torcendo!",
+      "Cada partida rende XP e moedas para gastar na loja.",
+    ], "uau"); })()}
     <div class="grade-jogos">${JOGOS.map((j, n) => {
       const travado = j.pro && !ehPro();
       return `
@@ -550,6 +556,11 @@ function telaLoja() {
       <p class="sub">Ganhe moedas em lições, baús, desafios do dia, conquistas e no fliperama.</p></div>
       <div class="saldo">🪙 <b>${E.moedas}</b><small>moedas</small></div>
     </section>
+    ${(() => { const prox = Object.entries(MASCOTES).find(([k]) => !E.mascotes.includes(k)); return dicaMascote([
+      `Você tem <b>${E.moedas} moedas</b>. O que vamos levar hoje?`,
+      prox ? `${prox[1].nome}, ${prox[1].desc}, quer muito te conhecer! Libera no nível ${prox[1].nivel}.` : "Você já tem todos os mascotes. A turma toda agradece!",
+      "O protetor de ofensiva salva seus dias seguidos se você esquecer de estudar um dia.",
+    ]); })()}
     <h2>Itens</h2>
     <div class="grade-loja">${itens.map(it => `
       <div class="item-loja">
@@ -835,6 +846,12 @@ async function telaPraticar() {
       <p class="sub">Revisão na hora certa, pronúncia com nota, conversa e leitura no seu nível. Tudo o que a ciência diz que funciona.</p></div>
       ${lumi("festa", "media flutua")}
     </section>
+    ${dicaMascote([
+      r.vencidos ? `Tem <b>${r.vencidos}</b> palavra${r.vencidos > 1 ? "s" : ""} querendo voltar para a sua cabeça. Começa pela revisão!` : "Sua revisão está em dia! Que tal treinar as armadilhas do brasileiro?",
+      "Minha receita: 5 minutos de revisão, uma lição nova e 3 minutos de pronúncia.",
+      "As <b>Armadilhas do brasileiro</b> treinam os erros que todo mundo comete. E não gastam vidas!",
+      "No laboratório tem os sons que mais pegam brasileiros. Eu treino o TH todo dia!",
+    ], "festa")}
     <div class="grade-jogos">${cards.map((c, n) => `
       <button class="card-jogo ${c.destaque ? "pulsando" : ""} ${c.ia && !ia ? "desligado" : ""}" data-p="${c.id}" style="--g1:${c.cor[0]};--g2:${c.cor[1]};animation-delay:${n * 70}ms">
         <span class="cj-ic">${c.ic}</span><b>${c.nome}</b><p>${c.desc}</p>

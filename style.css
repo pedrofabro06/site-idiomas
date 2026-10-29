@@ -1594,3 +1594,95 @@ button.aba { cursor: pointer; }
 .licao-rodape .fb small b { display: inline; font-family: inherit; font-size: inherit; color: inherit; }
 .nota-texto b { color: var(--texto); background: color-mix(in srgb, var(--c1) 16%, transparent); padding: 0 4px; border-radius: 6px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
 .nota-card h3, .nota-licao h2 { color: var(--texto); }
+/* ============================================================
+   Ilustrações no lugar dos emojis
+   ============================================================ */
+img.em { display: inline-block; width: 1.25em; height: 1.25em; object-fit: contain; vertical-align: -0.28em; user-select: none; pointer-events: none; }
+.intro-emoji img.em, .rl-emoji img.em { width: 1em; height: 1em; filter: drop-shadow(0 10px 14px rgba(0,0,0,.18)); }
+.pill img.em { width: 1.2em; height: 1.2em; }
+
+/* ============================================================
+   Cartões de Praticar e Fliperama: fundo calmo, cor só de detalhe
+   ============================================================ */
+.grade-jogos { gap: 14px; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); }
+.card-jogo {
+  color: var(--texto); background: var(--cartao); border: 2px solid var(--borda); border-radius: 24px; padding: 20px 20px 16px;
+  min-height: 0; display: grid; grid-template-columns: 78px 1fr; column-gap: 16px; row-gap: 4px; align-content: start;
+  box-shadow: 0 5px 0 var(--borda); transition: transform .15s, border-color .15s, box-shadow .15s;
+}
+.card-jogo::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 5px; background: linear-gradient(90deg, var(--g1), var(--g2)); }
+.card-jogo::after { display: none; }
+.card-jogo:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--g1) 55%, var(--borda)); box-shadow: 0 9px 0 color-mix(in srgb, var(--g1) 30%, var(--borda)); }
+.card-jogo .cj-ic {
+  grid-row: 1 / span 3; width: 78px; height: 78px; border-radius: 22px; display: grid; place-items: center; font-size: 2.7rem;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--g1) 10%, var(--cartao)), color-mix(in srgb, var(--g1) 22%, var(--cartao)));
+}
+.card-jogo:hover .cj-ic { transform: none; }
+.card-jogo:hover .cj-ic img.em { animation: cj-pula .5s; }
+@keyframes cj-pula { 40% { transform: translateY(-8px) rotate(-8deg) scale(1.08); } }
+.card-jogo b { font-size: 1.22rem; color: var(--texto); padding-right: 0; align-self: end; }
+.card-jogo p { color: var(--suave); font-size: .93rem; opacity: 1; font-weight: 700; }
+.card-jogo .cj-rodape { grid-column: 2; margin-top: 10px; font-size: .86rem; color: var(--suave); }
+.card-jogo .cj-rodape b { font-size: inherit; font-family: inherit; color: var(--texto); }
+.card-jogo .cj-play { background: color-mix(in srgb, var(--g1) 14%, var(--cartao)); color: color-mix(in srgb, var(--g1) 70%, var(--texto)); padding: 6px 13px; }
+.card-jogo .selo-passaporte.canto { top: 12px; right: 12px; }
+@media (max-width: 600px) {
+  .card-jogo { grid-template-columns: 62px 1fr; padding: 16px 14px 13px; column-gap: 12px; }
+  .card-jogo .cj-ic { width: 62px; height: 62px; font-size: 2.1rem; border-radius: 18px; }
+  .card-jogo b { font-size: 1.08rem; padding-right: 0; }
+  .card-jogo p { font-size: .86rem; }
+}
+
+/* Loja: ícone dos itens num quadrado macio */
+.il-ic { width: 66px; height: 66px; border-radius: 20px; display: grid; place-items: center; font-size: 2.4rem; flex-shrink: 0; background: var(--cartao-2); }
+.saldo img.em { width: 1.1em; height: 1.1em; }
+
+/* ============================================================
+   Mascote participante
+   ============================================================ */
+.dica-mascote { display: flex; align-items: center; gap: 10px; margin: 16px 0 4px; }
+.dm-bicho { border: none; background: none; padding: 0; cursor: pointer; flex-shrink: 0; }
+.dm-bicho .lumi.mini, .cp-bicho .lumi.mini { width: 64px; height: 70px; margin: 0; }
+.dm-bicho.pula, .cp-bicho.pula { animation: mascote-pulo .55s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes mascote-pulo { 35% { transform: translateY(-14px) rotate(-6deg); } 70% { transform: translateY(0) scaleY(.92); } }
+.dm-balao {
+  position: relative; background: var(--cartao); border: 2px solid var(--borda); border-radius: 18px; padding: 10px 14px;
+  font-weight: 700; line-height: 1.45; display: flex; flex-direction: column; gap: 1px; animation: entrar .35s;
+}
+.dm-balao::before { content: ""; position: absolute; left: -10px; top: 50%; margin-top: -9px; border: 9px solid transparent; border-right-color: var(--borda); border-left: 0; }
+.dm-balao b { color: var(--tinta); font-size: .82rem; text-transform: uppercase; letter-spacing: .04em; }
+
+.companheiro { position: fixed; right: 18px; bottom: 18px; z-index: 40; display: flex; align-items: flex-end; gap: 6px; pointer-events: none; }
+.companheiro > * { pointer-events: auto; }
+body.em-licao .companheiro, body.em-jogo .companheiro { display: none; }
+.cp-bicho { border: none; background: none; padding: 0; cursor: pointer; filter: drop-shadow(0 8px 12px rgba(0,0,0,.18)); animation: flutua 3s ease-in-out infinite; }
+.cp-balao {
+  position: relative; max-width: 260px; background: var(--cartao); border: 2px solid var(--c1); border-radius: 18px 18px 4px 18px;
+  padding: 10px 28px 10px 13px; font-weight: 700; font-size: .92rem; line-height: 1.4; box-shadow: var(--sombra); animation: entrar .3s; margin-bottom: 40px;
+}
+.cp-fechar { position: absolute; top: 2px; right: 6px; border: none; background: none; font-size: 1.2rem; color: var(--suave); cursor: pointer; line-height: 1; }
+@media (max-width: 860px) { .companheiro { bottom: calc(78px + env(safe-area-inset-bottom)); right: 10px; } .cp-balao { max-width: 210px; font-size: .86rem; } }
+
+.reacao-mascote {
+  position: fixed; left: 50%; bottom: 150px; z-index: 60; display: flex; align-items: center; gap: 8px; transform: translateX(-50%);
+  background: var(--cartao); border: 2px solid var(--borda); border-radius: 99px; padding: 6px 18px 6px 8px; box-shadow: var(--sombra);
+  font-family: var(--fonte-titulo); font-weight: 800; font-size: 1.1rem; animation: reacao-entra .45s cubic-bezier(.3, 1.6, .5, 1);
+  pointer-events: none; white-space: nowrap;
+}
+.reacao-mascote.festa { border-color: var(--certo); color: var(--certo); }
+.reacao-mascote.triste { color: var(--suave); }
+.reacao-mascote .lumi.mini { width: 46px; height: 50px; margin: 0; }
+.reacao-mascote.sai { transition: opacity .4s, transform .4s; opacity: 0; transform: translateX(-50%) translateY(16px); }
+@keyframes reacao-entra { from { opacity: 0; transform: translateX(-50%) translateY(30px) scale(.8); } }
+/* Loja: botão de comprar embaixo, texto com espaço */
+.item-loja { display: grid; grid-template-columns: 66px 1fr; align-items: center; gap: 10px 14px; }
+.item-loja .btn { grid-column: 1 / -1; width: 100%; }
+/* Só o nome do mascote fica em maiúsculas no balão */
+.dm-balao b { text-transform: none; letter-spacing: 0; font-size: inherit; color: inherit; }
+.dm-balao > b { color: var(--tinta); font-size: .82rem; text-transform: uppercase; letter-spacing: .04em; }
+/* Animações sozinhas do companheiro */
+.cp-bicho.acena { animation: mascote-acena .9s ease-in-out; }
+.cp-bicho.gira { animation: mascote-gira .8s cubic-bezier(.3, 1.4, .5, 1); }
+@keyframes mascote-acena { 20%, 60% { transform: rotate(-12deg); } 40%, 80% { transform: rotate(12deg); } }
+@keyframes mascote-gira { 50% { transform: translateY(-10px) rotate(180deg) scale(1.05); } 100% { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .cp-bicho, .cp-bicho.acena, .cp-bicho.gira, .cp-bicho.pula { animation: none; } }

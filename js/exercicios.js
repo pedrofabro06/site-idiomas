@@ -245,12 +245,14 @@ function iniciarLicao({ tema = null, nivel = 0, treino = false, revisao = false,
       fb.innerHTML = `<div class="fb-ic">${lumi("festa", "mini")}</div><div><b>${esc(umDe(elogios))}</b>
         ${aviso ? `<small>${aviso}</small>` : ""}${significado ? `<small>Significa: ${esc(significado)}</small>` : ""}${porque}</div>`;
       if (S.combo > 0 && S.combo % 5 === 0) { confetes(30); toast("🔥", `${S.combo} seguidas!`, "Você está pegando fogo."); }
+      else if (S.combo === 3 || (S.combo > 5 && S.combo % 3 === 0)) reagirMascote("festa", umDe(VIVAS));
     } else {
       S.erros++; S.combo = 0;
       E.stats.erros++;
       som("errado");
       tremer(corpo);
       if (item.w) registrarRevisao(item.w, false);
+      if (S.erros === 1 || Math.random() < 0.35) reagirMascote("triste", umDe(ANIMO));
       if (!S.semCusto) { perderVida(); $("#lvidas").textContent = "❤️ " + E.vidas; pular($("#lvidas")); }
       rodape.className = "licao-rodape erro";
       fb.innerHTML = `<div class="fb-ic">${lumi("triste", "mini")}</div><div><b>Resposta correta:</b>
@@ -333,6 +335,7 @@ function fimLicao(S) {
       ${chefe ? `<p class="sub">Um baú apareceu no fim da unidade. Vá abrir! 🎁</p>` : ""}
       <div class="acoes"><button class="btn grande" id="fimOk">Continuar</button></div>
     </div>`);
+  mascoteFimLicao(perfeita, chefe);
   $("#fimOk").onclick = () => ir(S.destino);
   $("#fimOk").focus();
   teclas = e => { if (e.key === "Enter") ir(S.destino); };
