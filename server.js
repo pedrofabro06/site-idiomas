@@ -399,6 +399,12 @@ async function rotaAdmin(req, res, rota) {
 //  Servidor
 // ============================================================
 async function tratar(req, res) {
+  // Quem entra por www.drpolygo.com vai para drpolygo.com (um endereço só, melhor para o Google e para o login)
+  const host = String(req.headers.host || "").toLowerCase();
+  if (host.startsWith("www.")) {
+    res.writeHead(301, { Location: "https://" + host.slice(4) + req.url });
+    return res.end();
+  }
   const rota = req.url.split("?")[0];
   if (!rota.startsWith("/api/")) return servirArquivo(req, res);
   try {

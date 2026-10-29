@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="DrPolygo">
+  <defs>
+    <linearGradient id="dpg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7C3AED"/>
+      <stop offset="1" stop-color="#DB2777"/>
+    </linearGradient>
+  </defs>
+  <!-- O Poliedro do Doutor Polygo, em forma de balão de fala -->
+  <g stroke="url(#dpg)" stroke-width="10" stroke-linejoin="round" fill="url(#dpg)">
+    <polygon points="58,13 96,35 96,79 58,101 20,79 20,35"/>
+    <polygon points="28,84 16,111 48,96"/>
+  </g>
+  <!-- Faces do cubo: topo claro, lado direito escuro -->
+  <polygon points="58,13 96,35 58,57 20,35" fill="#fff" opacity=".26" stroke="#fff" stroke-opacity=".26" stroke-width="10" stroke-linejoin="round"/>
+  <polygon points="58,57 96,35 96,79 58,101" fill="#1B1530" opacity=".14"/>
+  <!-- Óculos redondos do Doutor -->
+  <path d="M54.5 63 Q58 58.5 61.5 63" fill="none" stroke="#1B1530" stroke-width="4.5" stroke-linecap="round"/>
+  <circle cx="42" cy="65" r="13" fill="#fff" stroke="#1B1530" stroke-width="5"/>
+  <circle cx="74" cy="65" r="13" fill="#fff" stroke="#1B1530" stroke-width="5"/>
+  <circle cx="44.5" cy="62.5" r="5" fill="#1B1530"/>
+  <circle cx="76.5" cy="62.5" r="5" fill="#1B1530"/>
+  <!-- Sorriso -->
+  <path d="M49 86 Q58 93 67 86" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round"/>
+  <!-- Faísca de eureka -->
+  <path d="M101 2 L105.5 14.5 L118 19 L105.5 23.5 L101 36 L96.5 23.5 L84 19 L96.5 14.5Z" fill="#F59E0B" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+</svg>

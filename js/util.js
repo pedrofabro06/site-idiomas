@@ -258,9 +258,10 @@ function desenharDrPolygo(humor = "feliz", classe = "") {
     </g>
   </svg>`;
 }
+// Logo oficial no topo (o Poliedro com os óculos do Doutor)
 function desenharMarca() {
   const m = document.getElementById("marcaLumi");
-  if (m) m.innerHTML = desenharDrPolygo("feliz", "marca-svg");
+  if (m) m.innerHTML = '<img src="logo/drpolygo-simbolo.svg" alt="" width="40" height="40">';
 }
 let lumiId = 0;
 function desenharMascote(chave, humor = "feliz", classe = "") {
