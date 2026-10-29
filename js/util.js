@@ -123,6 +123,27 @@ function falar(texto, lento = false, idioma = E.idioma) {
   u.rate = (lento ? 0.6 : 0.95) * (E.velocidade || 1);
   speechSynthesis.speak(u);
 }
+// Fala um diálogo em sequência: uma voz para cada pessoa (ou o mesmo narrador em tons diferentes)
+// Cada linha: [pessoa "A"/"B", português, inglês, espanhol, francês, italiano, alemão]
+function falarDialogo(linhas, { lento = false, aoLinha = null, aoFim = null } = {}) {
+  if (!("speechSynthesis" in window) || !E.idioma) return;
+  speechSynthesis.cancel();
+  const lang = IDIOMAS[E.idioma].voz;
+  const vA = vozPara(lang, E.idioma);
+  const outras = vozesDoIdioma(E.idioma).filter(v => v !== vA);
+  const vB = outras.find(v => vA && v.lang === vA.lang) || outras[0] || vA;
+  linhas.forEach((l, i) => {
+    const u = new SpeechSynthesisUtterance(l[IDIOMAS[E.idioma].col + 1]);
+    const v = l[0] === "A" ? vA : vB;
+    u.lang = v ? v.lang : lang;
+    if (v) u.voice = v;
+    if (vA === vB) u.pitch = l[0] === "A" ? 1.15 : 0.8;
+    u.rate = (lento ? 0.6 : 0.95) * (E.velocidade || 1);
+    u.onstart = () => aoLinha && aoLinha(i);
+    if (i === linhas.length - 1) u.onend = () => aoFim && aoFim();
+    speechSynthesis.speak(u);
+  });
+}
 if ("speechSynthesis" in window) speechSynthesis.getVoices();
 const Reconhecimento = window.SpeechRecognition || window.webkitSpeechRecognition;
 

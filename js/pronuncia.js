@@ -132,11 +132,14 @@ function botaoPronunciar(texto, traducao = "", rotulo = "🎤") {
 }
 
 // ---------- Laboratório de pronúncia (shadowing) ----------
+let abaPronuncia = "unidade"; // "unidade" (palavras da trilha) ou "sons" (guia dos sons difíceis)
 function telaPronuncia(temaId) {
   const liberados = TEMAS.filter((t, i) => temaDesbloqueado(i));
   const tema = TEMAS.find(t => t.id === temaId) || liberados[liberados.length - 1] || TEMAS[0];
   const notas = E.pronuncia[E.idioma] || {};
   const itens = [...tema.palavras.map(p => ({ t: alvo(p), pt: p[0], e: p[6] })), ...tema.frases.map(f => ({ t: alvo(f), pt: f[0], e: "💬" }))];
+  const sons = GUIA_SONS[E.idioma] || [];
+  const verSons = abaPronuncia === "sons" && sons.length;
   render(`
     <button class="voltar" id="pVoltar">← Praticar</button>
     <section class="secao-topo">
@@ -145,19 +148,41 @@ function telaPronuncia(temaId) {
       <p class="sub">Técnica <b>shadowing</b>: ouça a voz nativa, repita na hora imitando o ritmo e a entonação. O site mostra quais palavras saíram certas.</p></div>
       ${lumi("uau", "media flutua")}
     </section>
+    <div class="abas-trilha">
+      <button class="aba ${verSons ? "" : "on"}" data-pa="unidade">📚 Palavras da unidade <small>com nota em cada palavra</small></button>
+      <button class="aba ${verSons ? "on" : ""}" data-pa="sons">🗣️ Sons difíceis <small>${sons.length} sons que pegam brasileiros</small></button>
+    </div>
+    ${Reconhecimento ? "" : `<p class="aviso-faixa">${MSG_ERRO_FALA["sem-suporte"]}</p>`}
+    ${verSons ? `
+    <p class="sub">Os sons em que quem fala português mais tropeça em ${IDIOMAS[E.idioma].nome.toLowerCase()}. Abra um, leia a dica, ouça 🔊 os exemplos e treine 🎤 com nota.</p>
+    <div class="sons-lista">${sons.map(([titulo, explicacao, exemplos], i) => `
+      <details class="som-card" ${i === 0 ? "open" : ""}>
+        <summary><span class="som-num">${i + 1}</span><b>${esc(titulo)}</b></summary>
+        <p>${esc(explicacao)}</p>
+        <div class="som-exemplos">${exemplos.map((x, j) => `<button class="chip-som" data-s="${i}" data-x="${j}">🔊 ${esc(x)}</button>`).join("")}</div>
+        <button class="btn secundario pequeno" data-treinar="${i}">🎤 Treinar com nota</button>
+      </details>`).join("")}</div>` : `
     <div class="linha-filtro">
       <label for="pTema"><b>Unidade:</b></label>
       <select id="pTema" class="campo pequeno">${TEMAS.map((t, i) => `<option value="${t.id}" ${t.id === tema.id ? "selected" : ""} ${temaDesbloqueado(i) ? "" : "disabled"}>${t.nivel} · ${t.icone} ${t.titulo}${temaDesbloqueado(i) ? "" : " 🔒"}</option>`).join("")}</select>
       <button class="btn" id="pShadow">▶ Modo shadowing</button>
     </div>
-    ${Reconhecimento ? "" : `<p class="aviso-faixa">${MSG_ERRO_FALA["sem-suporte"]}</p>`}
     <div class="lista-pron">${itens.map((it, i) => `
       <button class="item-pron" data-i="${i}">
         <span class="ip-emoji">${it.e}</span>
         <span class="ip-txt"><b>${esc(it.t)}</b><small>${esc(it.pt)}</small></span>
         <span class="ip-nota ${notas[it.t] >= 75 ? "boa" : notas[it.t] >= 50 ? "media" : notas[it.t] ? "ruim" : ""}">${notas[it.t] ? notas[it.t] + "%" : "🎤"}</span>
-      </button>`).join("")}</div>`);
+      </button>`).join("")}</div>`}`);
   $("#pVoltar").onclick = () => ir("praticar");
+  $$("[data-pa]").forEach(b => b.onclick = () => { abaPronuncia = b.dataset.pa; telaPronuncia(tema.id); });
+  if (verSons) {
+    $$(".chip-som").forEach(b => b.onclick = () => falar(sons[+b.dataset.s][2][+b.dataset.x]));
+    $$("[data-treinar]").forEach(b => b.onclick = () => {
+      const [titulo, , exemplos] = sons[+b.dataset.treinar];
+      shadowing(exemplos.map(x => ({ t: x, pt: "", e: "🗣️" })), { icone: "🗣️", titulo });
+    });
+    return;
+  }
   $("#pTema").onchange = e => telaPronuncia(e.target.value);
   $$(".item-pron").forEach(b => b.onclick = () => { const it = itens[+b.dataset.i]; abrirPronuncia(it.t, it.pt); });
   $("#pShadow").onclick = () => shadowing(itens, tema);

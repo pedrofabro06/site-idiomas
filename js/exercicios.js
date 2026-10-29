@@ -2,8 +2,31 @@
 //  Lições: monta a sequência de exercícios e conduz a partida
 // ============================================================
 const alvo = p => p[IDIOMAS[E.idioma].col];             // palavra/frase no idioma estudado
+const alvoFala = l => l[IDIOMAS[E.idioma].col + 1];       // fala do diálogo: [pessoa, pt, en, es, fr, it, de]
 let semMicrofone = false; // vira true quando a pessoa pede para pular a fala
 const palavrasDoTema = tema => tema.palavras.map((p, i) => ({ p, i, tema }));
+const NEUTROS = new Set(["intro", "nota"]); // telas sem resposta: só "Continuar"
+const maiuscula = t => t.charAt(0).toUpperCase() + t.slice(1);
+
+// Um erro típico de brasileiro: primeiro os ligados à unidade, senão um do mesmo nível ou abaixo
+function itemCorrigir(tema) {
+  const erros = ERROS_COMUNS[E.idioma] || [];
+  const daUnidade = erros.filter(e => e[6] === tema.id);
+  const ate = ORDEM_NIVEIS.indexOf(tema.nivel);
+  const pool = daUnidade.length ? daUnidade : erros.filter(e => ORDEM_NIVEIS.indexOf(e[5]) <= ate);
+  return pool.length ? { tipo: "corrigir", erro: umDe(pool) } : null;
+}
+// Uma fala do diálogo da unidade: a pessoa escolhe a resposta que faz sentido
+function itemDialogo(tema) {
+  const d = tema.dialogo;
+  if (!d || d.length < 2) return null;
+  const k = Math.floor(Math.random() * (d.length - 1));
+  const resposta = d[k + 1], certa = normalizar(alvoFala(resposta));
+  let fontes = TEMAS.filter(t => t !== tema && t.dialogo && t.nivel === tema.nivel);
+  if (fontes.length < 2) fontes = TEMAS.filter(t => t !== tema && t.dialogo);
+  const outras = fontes.flatMap(t => t.dialogo).filter(l => normalizar(alvoFala(l)) !== certa);
+  return { tipo: "dialogo", linha: d[k], resposta, outras: sortear(outras, 2) };
+}
 
 function distratores(w, n) {
   const a = normalizar(alvo(w.p)), pt = normalizar(w.p[0]);
@@ -41,25 +64,45 @@ function montarLicao(tema, nivel) {
     return { tipo, w: umDe(ws) };
   };
   const escolhaPalavra = w => ({ tipo: tema.imagens && Math.random() < 0.6 ? "imagem" : "traduzir", w });
+  const doTema = () => tema.ia ? [] : [itemDialogo(tema), itemCorrigir(tema)].filter(Boolean);
   const lista = [];
 
-  if (nivel === 0 || nivel === 1) {
+  // Lições 1, 2 e 3 apresentam 4 palavras novas cada (a 3ª, nas unidades de 12 palavras)
+  if (nivel < 2 || (nivel === 2 && W.length >= 12 && !tema.ia)) {
     const novas = W.slice(nivel * 4, nivel * 4 + 4);
+    const vistas = W.slice(0, nivel * 4 + 4);
+    // A 2ª lição começa explicando, em português, como o idioma funciona
+    const nota = nivel === 1 && tema.notas && tema.notas[E.idioma];
+    if (nota) lista.push({ tipo: "nota", nota });
     novas.forEach(w => { lista.push({ tipo: "intro", w }); lista.push(escolhaPalavra(w)); });
     lista.push({ tipo: "pares", ws: novas });
+    if (nivel === 2) {
+      const tipos = ["escrever", "ouvir", "montar", "ditado", "completar", fala ? "falar" : "ditado"];
+      return lista.concat(embaralhar([...tipos.map(t => item(t, vistas)), ...doTema()]));
+    }
     const extras = nivel === 0
       ? ["reverso", "ouvir", "letras", "traduzir", "escrever"]
       : ["escrever", "ouvir", "montar", "completar", "reverso", "letras"];
-    extras.forEach(t => lista.push(item(t, nivel === 0 ? novas : W)));
+    extras.forEach(t => lista.push(item(t, nivel === 0 ? novas : vistas)));
     return lista;
   }
   const tipos = nivel === 2
     ? ["traduzir", "reverso", "ouvir", "escrever", "escrever", "montar", "montar", "ditado", "completar", "letras", fala ? "falar" : "ditado"]
     : ["escrever", "escrever", "escrever", "montar", "montar", "ditado", "ditado", "completar", "reverso", "letras", fala ? "falar" : "escrever"];
   tipos.forEach(t => lista.push(item(t, W)));
-  const mist = embaralhar(lista);
+  const mist = embaralhar(lista.concat(doTema()));
   mist.splice(3, 0, { tipo: "pares", ws: sortear(W, 5) });
   return mist;
+}
+
+// Treino "Armadilhas do brasileiro": erros típicos + falsos amigos
+function montarArmadilhas() {
+  const ate = Math.max(1, ORDEM_NIVEIS.indexOf(nivelAtual()));
+  const erros = (ERROS_COMUNS[E.idioma] || []).filter(e => ORDEM_NIVEIS.indexOf(e[5]) <= ate);
+  const itens = sortear(erros, 6).map(erro => ({ tipo: "corrigir", erro }));
+  const falsos = TEMAS.find(t => t.id === "falsos");
+  if (falsos) sortear(palavrasDoTema(falsos), 4).forEach(w => itens.push({ tipo: "reverso", w }));
+  return embaralhar(itens);
 }
 
 function montarTreino() {
@@ -80,27 +123,30 @@ function montarTreino() {
     return { tipo, w: umDe(ws) };
   });
   lista.splice(2, 0, { tipo: "pares", ws: sortear(W, Math.min(5, W.length)) });
+  const armadilha = itemCorrigir({ id: null, nivel: nivelAtual() });
+  if (armadilha) lista.push(armadilha);
   return lista;
 }
 
 // ---------- Partida ----------
-function iniciarLicao({ tema = null, nivel = 0, treino = false, revisao = false, ia = false } = {}) {
+function iniciarLicao({ tema = null, nivel = 0, treino = false, revisao = false, ia = false, armadilhas = false } = {}) {
   // Depois das primeiras lições grátis, pede uma conta para continuar (e salvar na nuvem)
   if (precisaConta()) return abrirLogin({ obrigatorio: true, titulo: "Você está indo muito bem! 🎉", texto: "Crie sua conta grátis para salvar seu progresso e continuar a trilha. Leva 5 segundos." });
   atualizarVidas();
-  const semCusto = treino || revisao; // treino e revisão não gastam vidas
+  const semCusto = treino || revisao || armadilhas; // treinos e revisão não gastam vidas
   if (!semCusto && E.vidas <= 0) return modalSemVidas();
   let itens;
   if (revisao) {
     itens = montarRevisao();
     if (!itens.length) return toast("🧠", "Nada para revisar agora", "Volte mais tarde: as palavras reaparecem na hora certa.");
   } else if (treino) itens = montarTreino();
+  else if (armadilhas) itens = montarArmadilhas();
   else if (ia) itens = [...palavrasDoTema(tema).map(w => ({ tipo: "intro", w })), ...montarLicao(tema, 2)];
   else itens = montarLicao(tema, nivel);
-  const destino = revisao || ia ? "praticar" : tema && TEMAS.includes(tema) && !naTrilha(tema) ? "fundamentos" : "trilha";
+  const destino = revisao || ia || armadilhas ? "praticar" : tema && TEMAS.includes(tema) && !naTrilha(tema) ? "fundamentos" : "trilha";
   const S = {
-    itens, pos: 0, total: itens.filter(i => i.tipo !== "intro").length, concluidos: 0,
-    acertos: 0, erros: 0, combo: 0, comboMax: 0, inicio: Date.now(), treino, revisao, ia, semCusto, destino, tema, nivel, estado: "verificar",
+    itens, pos: 0, total: itens.filter(i => !NEUTROS.has(i.tipo)).length, concluidos: 0,
+    acertos: 0, erros: 0, combo: 0, comboMax: 0, inicio: Date.now(), treino, revisao, ia, armadilhas, semCusto, destino, tema, nivel, estado: "verificar",
   };
   document.body.classList.add("em-licao");
   render(`
@@ -145,13 +191,14 @@ function iniciarLicao({ tema = null, nivel = 0, treino = false, revisao = false,
     const item = S.itens[S.pos];
     // Sem microfone: frase vira ditado; palavra da revisão vira escrita
     if (item.tipo === "falar" && semMicrofone) item.tipo = item.temas ? "ditado" : "escrever";
-    S.estado = item.tipo === "intro" ? "neutro" : "verificar";
+    const neutro = NEUTROS.has(item.tipo);
+    S.estado = neutro ? "neutro" : "verificar";
     corpo.innerHTML = "";
     corpo.classList.remove("travado");
     rodape.className = "licao-rodape";
     fb.innerHTML = "";
-    btn.textContent = item.tipo === "intro" ? "Continuar" : "Verificar";
-    btn.disabled = item.tipo !== "intro";
+    btn.textContent = neutro ? "Continuar" : "Verificar";
+    btn.disabled = !neutro;
     btnPular.hidden = true;
     ctx = {
       verificar: null,
@@ -178,13 +225,14 @@ function iniciarLicao({ tema = null, nivel = 0, treino = false, revisao = false,
     };
   }
 
-  function responder({ certo, correta = "", aviso = "", falarTexto = "", significado = "" }) {
+  function responder({ certo, correta = "", aviso = "", falarTexto = "", significado = "", explicacao = "" }) {
     if (S.estado !== "verificar") return;
     S.estado = "continuar";
     corpo.classList.add("travado");
     btnPular.hidden = true;
     const item = S.itens[S.pos];
     const elogios = IDIOMAS[E.idioma].elogios;
+    const porque = explicacao ? `<small class="fb-explica">💡 ${explicacao}</small>` : "";
     if (certo) {
       S.acertos++; S.combo++; S.comboMax = Math.max(S.comboMax, S.combo); S.concluidos++;
       E.stats.acertos++;
@@ -195,7 +243,7 @@ function iniciarLicao({ tema = null, nivel = 0, treino = false, revisao = false,
       if (item.tipo === "escrever") contar("escrita");
       rodape.className = "licao-rodape ok";
       fb.innerHTML = `<div class="fb-ic">${lumi("festa", "mini")}</div><div><b>${esc(umDe(elogios))}</b>
-        ${aviso ? `<small>${aviso}</small>` : ""}${significado ? `<small>Significa: ${esc(significado)}</small>` : ""}</div>`;
+        ${aviso ? `<small>${aviso}</small>` : ""}${significado ? `<small>Significa: ${esc(significado)}</small>` : ""}${porque}</div>`;
       if (S.combo > 0 && S.combo % 5 === 0) { confetes(30); toast("🔥", `${S.combo} seguidas!`, "Você está pegando fogo."); }
     } else {
       S.erros++; S.combo = 0;
@@ -206,7 +254,7 @@ function iniciarLicao({ tema = null, nivel = 0, treino = false, revisao = false,
       if (!S.semCusto) { perderVida(); $("#lvidas").textContent = "❤️ " + E.vidas; pular($("#lvidas")); }
       rodape.className = "licao-rodape erro";
       fb.innerHTML = `<div class="fb-ic">${lumi("triste", "mini")}</div><div><b>Resposta correta:</b>
-        <span class="fb-correta">${esc(correta)}</span>${significado ? `<small>Significa: ${esc(significado)}</small>` : ""}</div>`;
+        <span class="fb-correta">${esc(correta)}</span>${significado ? `<small>Significa: ${esc(significado)}</small>` : ""}${porque}</div>`;
       // Errou? A questão volta no fim da lição (uma vez)
       if (!item.repetido && item.tipo !== "pares") S.itens.push(Object.assign({}, item, { repetido: true }));
       else S.concluidos++;
@@ -216,7 +264,7 @@ function iniciarLicao({ tema = null, nivel = 0, treino = false, revisao = false,
       // Depois de responder, dá para treinar a pronúncia da resposta certa
       if (Reconhecimento && item.tipo !== "falar") {
         const bp = el(`<button class="mini-btn fb-pron" type="button">🎤 Pronunciar</button>`);
-        bp.onclick = () => abrirPronuncia(falarTexto, item.w ? item.w.p[0] : item.f ? item.f[0] : "");
+        bp.onclick = () => abrirPronuncia(falarTexto, item.w ? item.w.p[0] : item.f ? item.f[0] : significado);
         const alvoFb = $("div:last-child", fb);
         if (alvoFb) alvoFb.appendChild(bp);
       }
@@ -245,8 +293,8 @@ function fimLicao(S) {
   const perfeita = S.erros === 0;
   const naTrilha = !S.treino && !S.revisao && !S.ia && TEMAS.includes(S.tema);
   const chefe = S.nivel === 3 && naTrilha;
-  let xp = S.revisao ? Math.max(5, S.acertos * 2) : S.treino ? 8 : (chefe ? 20 : 10) + (perfeita ? 5 : 0) + Math.floor(S.comboMax / 5) * 2;
-  let moedas = S.revisao ? 5 : S.treino ? 3 : (perfeita ? 10 : 5) + (chefe ? 10 : 0);
+  let xp = S.revisao || S.armadilhas ? Math.max(5, S.acertos * 2) : S.treino ? 8 : (chefe ? 20 : 10) + (perfeita ? 5 : 0) + Math.floor(S.comboMax / 5) * 2;
+  let moedas = S.revisao || S.armadilhas ? 5 : S.treino ? 3 : (perfeita ? 10 : 5) + (chefe ? 10 : 0);
   const estrelas = S.erros === 0 ? 3 : S.erros <= 2 ? 2 : 1;
 
   if (S.treino) ganharVidas(1);
@@ -265,13 +313,14 @@ function fimLicao(S) {
   confetes(perfeita ? 140 : 70);
 
   document.body.classList.remove("em-licao");
-  const titulo = S.revisao ? "Revisão concluída! 🧠" : S.treino ? "Treino concluído!" : chefe ? "Unidade dominada! 👑" : perfeita ? "Lição perfeita!" : "Lição concluída!";
+  const titulo = S.revisao ? "Revisão concluída! 🧠" : S.armadilhas ? "Armadilhas desarmadas! 🛡️" : S.treino ? "Treino concluído!" : chefe ? "Unidade dominada! 👑" : perfeita ? "Lição perfeita!" : "Lição concluída!";
   const rs = resumoSRS();
   render(`
     <div class="fim">
       ${lumi("festa", "grande pulando")}
       <h1><span class="destaque">${titulo}</span></h1>
       ${S.revisao ? `<p class="sub">As palavras que você acertou só voltam daqui a alguns dias. As que errou voltam logo. ${rs.dominados} palavra${rs.dominados === 1 ? "" : "s"} já estão na memória de longo prazo.</p>` :
+        S.armadilhas ? `<p class="sub">Você treinou os erros que mais pegam os brasileiros. Volte de vez em quando: é a repetição que faz o erro sumir de vez.</p>` :
         S.treino ? `<p class="sub">Você recuperou 1 ❤️ e reforçou o que já aprendeu.</p>` :
         `<div class="estrelas">${[1, 2, 3].map(n => `<span class="${n <= estrelas ? "on" : ""}" style="animation-delay:${n * 150}ms">★</span>`).join("")}</div>`}
       <div class="placar">
@@ -407,6 +456,7 @@ const TIPOS = {
       <div class="intro-emoji">${w.p[6]}</div>
       <div class="intro-palavra"><span>${esc(t)}</span></div>
       <div class="intro-trad">${esc(w.p[0])}</div>
+      ${w.p[7] ? `<p class="aviso-falso">⚠️ Cuidado: não é “${esc(w.p[7].parece)}”! ${esc(maiuscula(w.p[7].parece))} se diz <b>${esc(w.p[7].certo)}</b>.</p>` : ""}
       <p class="dica-pequena">Ouça, repita em voz alta e toque em Continuar.</p>
     </div>`;
     const linha = $(".intro-palavra", area);
@@ -435,14 +485,22 @@ const TIPOS = {
     ctx.verificar = () => { const s = c.get(); c.marcar(alvo(w.p)); return { certo: s.valor === alvo(w.p), correta: alvo(w.p), falarTexto: alvo(w.p) }; };
   },
 
-  // Idioma → português
+  // Idioma → português. Nos falsos amigos, a armadilha (o que a palavra parece) vira uma das opções
   reverso(area, { w }, ctx) {
     area.innerHTML = `<h2 class="enunciado">O que significa?</h2>`;
     balao(area, esc(alvo(w.p)), alvo(w.p));
     setTimeout(() => falar(alvo(w.p)), 250);
-    const ops = embaralhar([w, ...distratores(w, 3)]).map(x => ({ valor: x.p[0], rotulo: x.p[0] }));
-    const c = escolhas(area, ops, ctx);
-    ctx.verificar = () => { const s = c.get(); c.marcar(w.p[0]); return { certo: s.valor === w.p[0], correta: w.p[0] }; };
+    const armadilha = w.p[7];
+    const ops = [w, ...distratores(w, armadilha ? 2 : 3)].map(x => ({ valor: x.p[0], rotulo: x.p[0] }));
+    if (armadilha) ops.push({ valor: "~armadilha", rotulo: maiuscula(armadilha.parece) });
+    const c = escolhas(area, embaralhar(ops), ctx);
+    ctx.verificar = () => {
+      const s = c.get();
+      c.marcar(w.p[0]);
+      const r = { certo: s.valor === w.p[0], correta: w.p[0] };
+      if (armadilha) r.explicacao = `${s.valor === "~armadilha" ? "Caiu na armadilha! " : ""}<b>${esc(alvo(w.p))}</b> parece “${esc(armadilha.parece)}”, mas quer dizer “${esc(w.p[0])}”. ${esc(maiuscula(armadilha.parece))} se diz <b>${esc(armadilha.certo)}</b>.`;
+      return r;
+    };
   },
 
   // Ouça e escolha a palavra escrita
@@ -613,5 +671,47 @@ const TIPOS = {
       certo: ultima.nota >= 70, correta: t,
       aviso: `Nota de pronúncia: <b>${ultima.nota}%</b>`, falarTexto: ultima.nota >= 70 ? "" : t,
     });
+  },
+
+  // "Como funciona": a explicação curta da unidade, antes das palavras novas
+  nota(area, { nota }) {
+    const [titulo, texto, exemplos] = nota;
+    area.innerHTML = `<div class="nota-licao">
+      <span class="selo brilho">💡 Como funciona</span>
+      <h2>${esc(titulo)}</h2>
+      <p class="nota-texto">${texto}</p>
+      <div class="nota-ex"></div>
+      <p class="dica-pequena">Leia com calma e ouça os exemplos. Depois vêm as palavras novas.</p>
+    </div>`;
+    const box = $(".nota-ex", area);
+    exemplos.forEach(([a, pt]) => {
+      const linha = el(`<div class="ex-linha"><span><b>${esc(a)}</b><small>${esc(pt)}</small></span></div>`);
+      linha.prepend(botaoSom(a));
+      box.appendChild(linha);
+    });
+  },
+
+  // Diálogo: escolha a resposta que faz sentido
+  dialogo(area, { linha, resposta, outras }, ctx) {
+    const t = alvoFala(linha), r = alvoFala(resposta);
+    area.innerHTML = `<span class="selo-dialogo">🎭 Diálogo</span><h2 class="enunciado">Escolha a melhor resposta</h2>`;
+    balao(area, esc(t), t);
+    const trad = el(`<button class="btn texto pequeno ver-trad" type="button">👁️ Ver tradução</button>`);
+    trad.onclick = () => trad.replaceWith(el(`<p class="traducao-dica">“${esc(linha[1])}”</p>`));
+    area.appendChild(trad);
+    setTimeout(() => falar(t), 250);
+    const ops = embaralhar([resposta, ...outras]).map(l => ({ valor: alvoFala(l), rotulo: alvoFala(l), falar: alvoFala(l) }));
+    const c = escolhas(area, ops, ctx);
+    ctx.verificar = () => { const s = c.get(); c.marcar(r); return { certo: s.valor === r, correta: r, falarTexto: r, significado: resposta[1] }; };
+  },
+
+  // Armadilha de brasileiro: qual das frases está certa?
+  corrigir(area, { erro }, ctx) {
+    const [errada, certa, outra, explica, pt] = erro;
+    area.innerHTML = `<span class="selo-armadilha">⚠️ Erro comum de brasileiro</span><h2 class="enunciado">Qual frase está certa?</h2>`;
+    balao(area, `“${esc(pt)}”`);
+    const ops = embaralhar([certa, errada, outra]).map(x => ({ valor: x, rotulo: x }));
+    const c = escolhas(area, ops, ctx);
+    ctx.verificar = () => { const s = c.get(); c.marcar(certa); return { certo: s.valor === certa, correta: certa, falarTexto: certa, explicacao: esc(explica) }; };
   },
 };

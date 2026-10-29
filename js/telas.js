@@ -265,9 +265,9 @@ function telaIdiomas() {
 // ---------- Trilha ----------
 const NOS = [
   { ic: "★", nome: "Lição 1", desc: "Conheça 4 palavras novas com imagens, áudio e pares." },
-  { ic: "★", nome: "Lição 2", desc: "Mais 4 palavras e suas primeiras frases." },
-  { ic: "★", nome: "Lição 3", desc: "Misture tudo: escrita, ditado, frases e fala." },
-  { ic: "👑", nome: "Desafio", desc: "Prova final da unidade. Mais difícil, vale coroa e mais XP." },
+  { ic: "★", nome: "Lição 2", desc: "Entenda como o idioma funciona, aprenda mais 4 palavras e as primeiras frases." },
+  { ic: "★", nome: "Lição 3", desc: "As últimas 4 palavras, um diálogo de verdade e um erro clássico de brasileiro para não cometer." },
+  { ic: "👑", nome: "Desafio", desc: "Prova final da unidade: escrita, ditado, diálogo e fala. Vale coroa e mais XP." },
   { ic: "🎁", nome: "Baú", desc: "Abra para ganhar moedas." },
 ];
 const DESLOCAMENTO = [0, 70, 100, 70, 0];
@@ -336,7 +336,7 @@ function telaTrilha(modo = "trilha") {
           <h2>${t.icone} ${t.titulo}</h2>
           <p>${t.desc}</p>
         </div>
-        <button class="btn-vocab" data-vocab="${i}">📖 Palavras</button>
+        <button class="btn-vocab" data-vocab="${i}">📖 Estudar</button>
       </div>
       <div class="caminho">`;
     // Unidade ainda bloqueada: mostra só uma linha compacta de cadeados, sem o caminho inteiro
@@ -372,7 +372,7 @@ function telaTrilha(modo = "trilha") {
   $("#tRevisar").onclick = () => iniciarLicao({ revisao: true });
   $("#tNivel").onclick = () => iniciarNivelamento();
   $("#tTrocar").onclick = () => ir("idiomas");
-  $$("[data-vocab]").forEach(b => b.onclick = () => modalVocabulario(TEMAS[+b.dataset.vocab]));
+  $$("[data-vocab]").forEach(b => b.onclick = () => modalEstudar(TEMAS[+b.dataset.vocab]));
   $$(".no, .caminho-travado").forEach(b => b.onclick = () => clicarNo(+b.dataset.t, +b.dataset.k, b));
 
   // Rola até a fase atual (só na trilha principal)
@@ -436,30 +436,74 @@ function abrirBau(t) {
   };
 }
 
-function modalVocabulario(t) {
+// "Estudar": explicação, diálogo, palavras e frases da unidade, tudo com áudio
+function modalEstudar(t) {
   const aprendidas = new Set(((E.aprendidas[E.idioma] || {})[t.id]) || []);
+  const nota = t.notas && t.notas[E.idioma];
+  const abas = [
+    nota && ["nota", "💡 Como funciona"],
+    t.dialogo && ["dialogo", "🎭 Diálogo"],
+    ["palavras", `🔤 Palavras <small>${t.palavras.length}</small>`],
+    ["frases", `💬 Frases <small>${t.frases.length}</small>`],
+  ].filter(Boolean);
   const m = abrirModal(`
     <h2>${t.icone} ${t.titulo}</h2>
-    <p class="sub">🔊 ouvir · 🎤 treinar a pronúncia · ✅ palavra que você já acertou.</p>
-    <div class="vocab-lista">${t.palavras.map((p, i) => `
-      <div class="vocab-item">
-        <span class="vi-emoji">${p[6]}</span>
-        <span class="vi-txt"><b>${esc(alvo(p))} ${aprendidas.has(i) ? "✅" : ""}</b><small>${esc(p[0])}</small></span>
-        <button class="som-btn" data-i="${i}">🔊</button>
-        ${Reconhecimento ? `<button class="som-btn mic-btn" data-pi="${i}">🎤</button>` : ""}
-      </div>`).join("")}</div>
-    <h3>Frases</h3>
-    <div class="vocab-lista">${t.frases.map((f, i) => `
-      <div class="vocab-item frase">
-        <span class="vi-txt"><b>${esc(alvo(f))}</b><small>${esc(f[0])}</small></span>
-        <button class="som-btn" data-f="${i}">🔊</button>
-        ${Reconhecimento ? `<button class="som-btn mic-btn" data-pf="${i}">🎤</button>` : ""}
-      </div>`).join("")}</div>
-    <div class="acoes"><button class="btn" data-fechar>Fechar</button></div>`, { classe: "larga" });
-  $$("[data-i]", m.el).forEach(b => b.onclick = () => falar(alvo(t.palavras[+b.dataset.i])));
-  $$("[data-f]", m.el).forEach(b => b.onclick = () => falar(alvo(t.frases[+b.dataset.f])));
-  $$("[data-pi]", m.el).forEach(b => b.onclick = () => { const p = t.palavras[+b.dataset.pi]; m.fechar(); abrirPronuncia(alvo(p), p[0]); });
-  $$("[data-pf]", m.el).forEach(b => b.onclick = () => { const f = t.frases[+b.dataset.pf]; m.fechar(); abrirPronuncia(alvo(f), f[0]); });
+    <div class="estudar-abas">${abas.map(([id, rotulo]) => `<button class="estudar-aba" data-aba="${id}">${rotulo}</button>`).join("")}</div>
+    <div class="estudar-corpo" id="eCorpo"></div>
+    <div class="acoes"><button class="btn" data-fechar>Fechar</button></div>`,
+    { classe: "larga", aoFechar: () => window.speechSynthesis?.cancel() });
+  const corpo = $("#eCorpo", m.el);
+  const mic = (tipo, i) => Reconhecimento ? `<button class="som-btn mic-btn" data-${tipo}="${i}">🎤</button>` : "";
+  const desenhar = {
+    nota: () => `<div class="nota-card"><h3>${esc(nota[0])}</h3><p class="nota-texto">${nota[1]}</p>
+      <div class="nota-ex">${nota[2].map(([a, pt], i) => `<div class="ex-linha"><button class="som-btn" data-ex="${i}">🔊</button><span><b>${esc(a)}</b><small>${esc(pt)}</small></span></div>`).join("")}</div></div>`,
+    dialogo: () => `<div class="dlg-acoes"><button class="btn pequeno" id="dTocar">▶ Ouvir o diálogo</button><button class="btn secundario pequeno" id="dLento">🐢 Devagar</button></div>
+      <div class="dlg">${t.dialogo.map((l, i) => `
+        <div class="dlg-linha ${l[0] === "A" ? "a" : "b"}">
+          <span class="dlg-av">${l[0] === "A" ? "🦊" : "🐼"}</span>
+          <div class="dlg-balao"><b>${esc(alvoFala(l))}</b><small>${esc(l[1])}</small></div>
+          <button class="som-btn" data-fala="${i}">🔊</button>
+          ${mic("pd", i)}
+        </div>`).join("")}</div>
+      <p class="sub pequena">Ouça uma vez lendo a tradução. Depois, tente entender só de ouvido e repita as falas em voz alta.</p>`,
+    palavras: () => `<p class="sub">🔊 ouvir · 🎤 treinar a pronúncia · ✅ palavra que você já acertou.</p>
+      <div class="vocab-lista">${t.palavras.map((p, i) => `
+        <div class="vocab-item">
+          <span class="vi-emoji">${p[6]}</span>
+          <span class="vi-txt"><b>${esc(alvo(p))} ${aprendidas.has(i) ? "✅" : ""}</b><small>${esc(p[0])}</small></span>
+          <button class="som-btn" data-i="${i}">🔊</button>
+          ${mic("pi", i)}
+        </div>`).join("")}</div>`,
+    frases: () => `<p class="sub">Frases-chave: blocos prontos que os nativos usam o tempo todo. Aprenda inteiras, não palavra por palavra.</p>
+      <div class="vocab-lista">${t.frases.map((f, i) => `
+        <div class="vocab-item frase">
+          <span class="vi-txt"><b>${esc(alvo(f))}</b><small>${esc(f[0])}</small></span>
+          <button class="som-btn" data-f="${i}">🔊</button>
+          ${mic("pf", i)}
+        </div>`).join("")}</div>`,
+  };
+  const pronunciar = (texto, pt) => { m.fechar(); abrirPronuncia(texto, pt); };
+  function mostrar(id) {
+    window.speechSynthesis?.cancel();
+    $$(".estudar-aba", m.el).forEach(b => b.classList.toggle("on", b.dataset.aba === id));
+    corpo.innerHTML = desenhar[id]();
+    $$("[data-ex]", corpo).forEach(b => b.onclick = () => falar(nota[2][+b.dataset.ex][0]));
+    $$("[data-i]", corpo).forEach(b => b.onclick = () => falar(alvo(t.palavras[+b.dataset.i])));
+    $$("[data-f]", corpo).forEach(b => b.onclick = () => falar(alvo(t.frases[+b.dataset.f])));
+    $$("[data-pi]", corpo).forEach(b => b.onclick = () => { const p = t.palavras[+b.dataset.pi]; pronunciar(alvo(p), p[0]); });
+    $$("[data-pf]", corpo).forEach(b => b.onclick = () => { const f = t.frases[+b.dataset.pf]; pronunciar(alvo(f), f[0]); });
+    $$("[data-pd]", corpo).forEach(b => b.onclick = () => { const l = t.dialogo[+b.dataset.pd]; pronunciar(alvoFala(l), l[1]); });
+    if (id === "dialogo") {
+      const linhas = $$(".dlg-linha", corpo);
+      const marcar = i => linhas.forEach((x, k) => x.classList.toggle("falando", k === i));
+      const tocar = lento => falarDialogo(t.dialogo, { lento, aoLinha: marcar, aoFim: () => marcar(-1) });
+      $("#dTocar", corpo).onclick = () => tocar(false);
+      $("#dLento", corpo).onclick = () => tocar(true);
+      $$("[data-fala]", corpo).forEach(b => b.onclick = () => falarDialogo([t.dialogo[+b.dataset.fala]]));
+    }
+  }
+  $$(".estudar-aba", m.el).forEach(b => b.onclick = () => mostrar(b.dataset.aba));
+  mostrar(abas[0][0]);
 }
 
 // ---------- Fliperama ----------
@@ -693,11 +737,20 @@ const PILARES = [
   { ic: "🎯", nome: "Recordação ativa", curto: "Tentar lembrar fixa muito mais do que reler. Por isso você escreve, monta frases e fala, em vez de só reconhecer.",
     longo: "É o efeito de teste (Roediger e Karpicke, 2006): quem se testou lembrou muito mais uma semana depois do que quem só releu o conteúdo. Conforme a palavra amadurece na revisão, os exercícios passam de reconhecer para produzir.",
     onde: "Trilha e revisão", rota: "trilha" },
+  { ic: "🧱", nome: "Blocos prontos", curto: "Nativos não montam frases palavra por palavra: usam blocos como I'd like, it depends on, have you ever. Cada unidade traz frases-chave e um diálogo.",
+    longo: "As pesquisas sobre linguagem formulaica (Alison Wray, 2002) mostram que boa parte da fala nativa é feita de sequências prontas. Num experimento de Boers e colegas (2006), alunos treinados para notar esses blocos foram avaliados como mais fluentes em entrevistas orais. Por isso cada unidade tem frases-chave e um diálogo, e não só palavras soltas.",
+    onde: "Estudar uma unidade", rota: "trilha" },
+  { ic: "💡", nome: "Explicação na hora certa", curto: "Entender como o idioma funciona acelera muito. Cada unidade tem um “Como funciona” curto, em português, comparando com o que você já sabe.",
+    longo: "Uma meta-análise de 49 estudos (Norris e Ortega, 2000) concluiu que o ensino explícito, que explica a regra e depois pratica, dá resultados maiores e mais duradouros do que só a exposição. O DrPolygo explica pouco e no momento certo: no começo da segunda lição de cada unidade.",
+    onde: "Trilha", rota: "trilha" },
+  { ic: "🛡️", nome: "Feito para quem fala português", curto: "As maiores dificuldades vêm da nossa própria língua: o “i” a mais no fim das palavras, o “tchi” no lugar do t, os falsos amigos. O DrPolygo ataca exatamente esses pontos.",
+    longo: "Estudos com brasileiros aprendendo inglês documentam padrões previsíveis: inserir uma vogal depois de consoantes finais, pronunciar o -ed como uma sílaba a mais e errar a sílaba tônica, o que mais prejudica a compreensão. Saber o erro antes ajuda a evitá-lo. Por isso existem o guia de sons no laboratório de pronúncia, os falsos amigos e o treino de armadilhas.",
+    onde: "Armadilhas do brasileiro", rota: "armadilhas" },
   { ic: "📖", nome: "Input compreensível", curto: "Ler e ouvir conteúdo um pouco acima do seu nível é o que faz o idioma entrar. A IA escreve textos no seu nível sobre o que você gosta.",
     longo: "Stephen Krashen chamou isso de i+1: material que você entende quase todo, com um pouco de novidade. Textos chatos ou difíceis demais não funcionam. Por isso as lições sob medida deixam você escolher o tema e o nível.",
     onde: "Lição sob medida", rota: "licaoia" },
   { ic: "📊", nome: "Frequência e nível certo", curto: "Começamos pelas palavras mais usadas e seguimos os níveis A1 a C1. O teste inicial evita perder tempo com o que você já sabe.",
-    longo: "As pesquisas de Paul Nation mostram que as cerca de 2.000 famílias de palavras mais frequentes cobrem por volta de 80% de um texto comum. A trilha segue o Quadro Europeu Comum de Referência (CEFR), o padrão usado em escolas e certificações no mundo todo.",
+    longo: "As pesquisas de Paul Nation mostram que as cerca de 2.000 famílias de palavras mais frequentes cobrem por volta de 80% de um texto comum, e a New General Service List (Browne, 2013) chega a cerca de 90% com 2.800 palavras. A trilha prioriza esse vocabulário e segue o Quadro Europeu Comum de Referência (CEFR), o padrão usado em escolas e certificações no mundo todo.",
     onde: "Teste de nível", rota: "nivel" },
   { ic: "🗣️", nome: "Shadowing com nota", curto: "Ouça a voz nativa e repita na hora. O site mostra palavra por palavra o que saiu certo, para você corrigir na hora.",
     longo: "Shadowing é uma técnica usada na formação de intérpretes: imitar ritmo, entonação e sons logo depois de ouvir. Com feedback imediato, você descobre quais palavras precisa treinar, em vez de repetir o erro sem perceber.",
@@ -713,8 +766,25 @@ const PILARES = [
 function abrirPilar(rota) {
   if (rota === "nivel") return iniciarNivelamento();
   if (rota === "revisao") return iniciarLicao({ revisao: true });
+  if (rota === "armadilhas") return iniciarLicao({ armadilhas: true });
   ir(rota);
 }
+
+// Referências citadas na página do método
+const FONTES_METODO = [
+  "Ebbinghaus, H. (1885). Über das Gedächtnis.",
+  "Cepeda, N. et al. (2006). Distributed practice in verbal recall tasks. Psychological Bulletin.",
+  "Dunlosky, J. et al. (2013). Improving students' learning with effective learning techniques. Psychological Science in the Public Interest.",
+  "Roediger, H. & Karpicke, J. (2006). Test-enhanced learning. Psychological Science.",
+  "Wray, A. (2002). Formulaic Language and the Lexicon. Cambridge University Press.",
+  "Boers, F. et al. (2006). Formulaic sequences and perceived oral proficiency. Language Teaching Research.",
+  "Norris, J. & Ortega, L. (2000). Effectiveness of L2 instruction: a research synthesis and meta-analysis. Language Learning.",
+  "Krashen, S. (1982). Principles and Practice in Second Language Acquisition.",
+  "Nation, P. (2006). How large a vocabulary is needed for reading and listening? Canadian Modern Language Review.",
+  "Browne, C. (2013). The New General Service List. The Language Teacher.",
+  "Swain, M. (1985). Communicative competence: some roles of comprehensible input and output.",
+  "Estudos sobre a pronúncia do inglês por brasileiros (epêntese, terminação -ed e acento das palavras), como Delatorre e Koerich (UFSC).",
+];
 
 function telaMetodo() {
   render(`
@@ -733,10 +803,14 @@ function telaMetodo() {
     <h2>Sua rotina ideal de 20 minutos</h2>
     <div class="rotina">
       <div class="passo"><b>1</b><div><strong>Revisão inteligente</strong><small>5 min · as palavras que estão para ser esquecidas</small></div></div>
-      <div class="passo"><b>2</b><div><strong>Uma lição nova da trilha</strong><small>7 min · vocabulário e frases do seu nível</small></div></div>
+      <div class="passo"><b>2</b><div><strong>Uma lição nova da trilha</strong><small>7 min · vocabulário, frases-chave e diálogo do seu nível</small></div></div>
       <div class="passo"><b>3</b><div><strong>Shadowing</strong><small>3 min · ouvir, repetir e ver a nota</small></div></div>
       <div class="passo"><b>4</b><div><strong>Conversa ou leitura com IA</strong><small>5 min · use o idioma de verdade</small></div></div>
-    </div>`);
+    </div>
+    <details class="fontes">
+      <summary>📚 Pesquisas citadas nesta página</summary>
+      <ul>${FONTES_METODO.map(f => `<li>${esc(f)}</li>`).join("")}</ul>
+    </details>`);
   $$("[data-rota]").forEach(b => b.onclick = () => abrirPilar(b.dataset.rota));
 }
 
@@ -747,11 +821,12 @@ async function telaPraticar() {
   const nv = E.nivelamento[E.idioma]?.nivel;
   const cards = [
     { id: "revisao", ic: "🧠", nome: "Revisão inteligente", desc: r.vencidos ? `${r.vencidos} palavra${r.vencidos > 1 ? "s" : ""} para revisar agora` : r.total ? `Tudo em dia · ${r.dominados}/${r.total} na memória de longo prazo` : "Acerte palavras na trilha para começar", destaque: r.vencidos > 0, cor: ["#7C3AED", "#2563EB"] },
-    { id: "pronuncia", ic: "🎤", nome: "Laboratório de pronúncia", desc: "Fale e receba nota em cada palavra. Modo shadowing.", cor: ["#059669", "#0EA5E9"] },
+    { id: "pronuncia", ic: "🎤", nome: "Laboratório de pronúncia", desc: "Fale e receba nota em cada palavra. Guia dos sons mais difíceis para brasileiros.", cor: ["#059669", "#0EA5E9"] },
+    { id: "armadilhas", ic: "🛡️", nome: "Armadilhas do brasileiro", desc: `Os erros que todo brasileiro comete em ${IDIOMAS[E.idioma].nome.toLowerCase()} e os falsos amigos. Não gasta vidas.`, cor: ["#B45309", "#7C2D12"] },
     { id: "tutor", ic: "💬", nome: `Tutor com IA`, desc: ia ? "Converse, tire dúvidas ou simule situações reais" : "Precisa ligar a IA no servidor", ia: true, cor: ["#DB2777", "#F59E0B"] },
     { id: "licaoia", ic: "✨", nome: "Lição sob medida", desc: ia ? "Texto, vocabulário e exercícios sobre qualquer tema" : "Precisa ligar a IA no servidor", ia: true, cor: ["#EA580C", "#DC2626"] },
     { id: "nivel", ic: "📏", nome: "Teste de nível", desc: nv ? `Seu resultado: ${nv}. Refaça quando quiser.` : "Descubra seu nível do A1 ao C1", cor: ["#0891B2", "#4F46E5"] },
-    { id: "metodo", ic: "📘", nome: "O método", desc: "As 7 técnicas com mais evidência científica", cor: ["#475569", "#0F172A"] },
+    { id: "metodo", ic: "📘", nome: "O método", desc: `As ${PILARES.length} técnicas com mais evidência científica`, cor: ["#475569", "#0F172A"] },
   ];
   render(`
     <section class="secao-topo">

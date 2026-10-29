@@ -71,12 +71,16 @@ const PERGUNTAS = [
     ["15", "🏃", "15 minutos por dia", "Sério · meta de 50 XP"],
     ["20", "🔥", "20 minutos ou mais", "Intenso · meta de 100 XP"],
   ] },
-  { id: "origem", fala: () => "Última pergunta! Como você conheceu o DrPolygo?", opcoes: [
-    ["instagram", "📸", "Instagram", ""], ["tiktok", "🎵", "TikTok", ""], ["youtube", "▶️", "YouTube", ""],
-    ["google", "🔍", "Pesquisa no Google", ""], ["facebook", "👍", "Facebook", ""], ["amigo", "🗣️", "Indicação de alguém", ""],
-    ["anuncio", "📢", "Vi um anúncio", ""], ["outro", "✨", "Outro lugar", ""],
+  { id: "origem", fala: () => "Última pergunta! Como você conheceu o DrPolygo?", compacto: true, opcoes: [
+    ["instagram", iconeMarca("instagram"), "Instagram", ""], ["tiktok", iconeMarca("tiktok"), "TikTok", ""],
+    ["youtube", iconeMarca("youtube"), "YouTube", ""], ["google", iconeMarca("google"), "Google", ""],
+    ["facebook", iconeMarca("facebook"), "Facebook", ""], ["whatsapp", iconeMarca("whatsapp"), "WhatsApp", ""],
+    ["x", iconeMarca("x"), "X (Twitter)", ""], ["amigo", "🗣️", "Indicação", ""],
+    ["anuncio", "📢", "Anúncio", ""], ["outro", "✨", "Outro lugar", ""],
   ] },
 ];
+// Nome e símbolo de cada origem (usado também no painel)
+const ORIGENS = Object.fromEntries(PERGUNTAS.find(q => q.id === "origem").opcoes.map(([v, ic, rot]) => [v, { ic, rot }]));
 const META_POR_TEMPO = { 5: 10, 10: 30, 15: 50, 20: 100 };
 
 function telaBoasVindas() {
@@ -85,7 +89,7 @@ function telaBoasVindas() {
   // Se veio de um anúncio, já sugere a origem
   const fonte = (E.origemUtm && E.origemUtm.utm_source || "").toLowerCase();
   if (fonte && !resp.origem) {
-    const mapa = { ig: "instagram", instagram: "instagram", tiktok: "tiktok", youtube: "youtube", yt: "youtube", google: "google", facebook: "facebook", fb: "facebook", meta: "anuncio" };
+    const mapa = { ig: "instagram", instagram: "instagram", tiktok: "tiktok", youtube: "youtube", yt: "youtube", google: "google", facebook: "facebook", fb: "facebook", meta: "anuncio", whatsapp: "whatsapp", wa: "whatsapp", twitter: "x", x: "x" };
     resp.origem = mapa[fonte] || null;
   }
   let passo = 0;
@@ -99,7 +103,7 @@ function telaBoasVindas() {
           ${passo === 0 && CONFIG.contas ? `<button class="btn texto pequeno" id="bvEntrar">Já tenho conta</button>` : `<span class="nivel-chip">${passo + 1}/${PERGUNTAS.length}</span>`}
         </div>
         <div class="bv-fala">${passo === 0 ? desenharDrPolygo("feliz", "media flutua") : lumi(passo === PERGUNTAS.length - 1 ? "festa" : "feliz", "media flutua")}<div class="balao">${q.fala()}</div></div>
-        <div class="bv-opcoes ${q.idiomas ? "idiomas" : ""}" id="bvOpcoes">${q.idiomas
+        <div class="bv-opcoes ${q.idiomas ? "idiomas" : ""} ${q.compacto ? "compacto" : ""}" id="bvOpcoes">${q.idiomas
           ? Object.entries(IDIOMAS).map(([c, i]) => `<button class="bv-op ${resp.idioma === c ? "sel" : ""}" data-v="${c}" style="--k1:${i.tema.c1}">${svgBandeira(c, "bandeira bv-bandeira")}<b>${i.nome}</b><small>${i.nativo}</small></button>`).join("")
           : q.opcoes.map(([v, ic, rot, sub]) => `<button class="bv-op ${resp[q.id] === v ? "sel" : ""}" data-v="${v}"><span class="bv-ic">${ic}</span><span><b>${rot}</b>${sub ? `<small>${sub}</small>` : ""}</span></button>`).join("")}
         </div>
@@ -356,10 +360,11 @@ async function telaAdmin() {
   if (!CONTA.usuario || !CONTA.usuario.admin) { render(`<div class="vazio">${lumi("triste", "media")}<p class="sub">Só para administradores.</p></div>`); return; }
   render(`<h1>📊 Painel</h1><p class="sub">Carregando...</p>`);
   const [resumo, usuarios, pagamentos] = await Promise.all(["resumo", "usuarios", "pagamentos"].map(r => fetch("/api/admin/" + r).then(x => x.json())));
-  const barras = (titulo, lista) => {
+  const barras = (titulo, lista, rotulo = k => esc(k)) => {
     const max = Math.max(1, ...lista.map(x => x[1]));
-    return `<div class="cartao-p"><h3>${titulo}</h3>${lista.length ? lista.map(([k, v]) => `<div class="adm-barra"><span>${esc(k)}</span><div><i style="width:${(v / max) * 100}%"></i></div><b>${v}</b></div>`).join("") : `<p class="sub">Sem dados ainda.</p>`}</div>`;
+    return `<div class="cartao-p"><h3>${titulo}</h3>${lista.length ? lista.map(([k, v]) => `<div class="adm-barra"><span>${rotulo(k)}</span><div><i style="width:${(v / max) * 100}%"></i></div><b>${v}</b></div>`).join("") : `<p class="sub">Sem dados ainda.</p>`}</div>`;
   };
+  const rotuloOrigem = k => ORIGENS[k] ? `${ORIGENS[k].ic.startsWith("<svg") ? iconeMarca(k, "mini") : ORIGENS[k].ic} ${esc(ORIGENS[k].rot)}` : esc(k);
   render(`
     <h1>📊 Painel do DrPolygo</h1>
     <div class="grade-stats">
@@ -370,7 +375,7 @@ async function telaAdmin() {
     </div>
     <div class="adm-grade">
       ${barras("Cadastros por dia (14 dias)", resumo.cadastrosPorDia.map(([d, n]) => [d.slice(5).split("-").reverse().join("/"), n]))}
-      ${barras("Como conheceram", resumo.porOrigem)}
+      ${barras("Como conheceram", resumo.porOrigem, rotuloOrigem)}
       ${barras("Campanhas (utm_campaign)", resumo.porCampanha)}
       ${barras("Objetivo", resumo.porObjetivo)}
       ${barras("Idioma", resumo.porIdioma)}

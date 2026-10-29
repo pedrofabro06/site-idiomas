@@ -180,7 +180,8 @@ function temaDesbloqueado(i, idioma = E.idioma) {
   const t = TEMAS[i];
   if (!naTrilha(t, idioma)) return true; // fundamentos ficam sempre abertos
   const primeiro = TEMAS.findIndex(x => naTrilha(x, idioma));
-  return i === primeiro || progTema(TEMAS[i - 1].id, idioma).licao >= 4;
+  // Unidade já começada nunca volta a trancar (mesmo que uma unidade nova entre antes dela)
+  return i === primeiro || progTema(t.id, idioma).licao > 0 || progTema(TEMAS[i - 1].id, idioma).licao >= 4;
 }
 
 // Nível atual do aluno: o do teste ou o mais alto que ele já completou na trilha

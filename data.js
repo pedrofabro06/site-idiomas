@@ -685,6 +685,11 @@ const ORDEM_NIVEIS = NIVEIS.map(n => n.id);
 TEMAS.forEach((t, i) => { t.nivel = t.nivel || "A1"; t._ordem = i; });
 TEMAS.sort((a, b) => ORDEM_NIVEIS.indexOf(a.nivel) - ORDEM_NIVEIS.indexOf(b.nivel) || a._ordem - b._ordem);
 
+// Aprofundamento (arquivos da pasta conteudo/): cada unidade ganha mais palavras,
+// frases-chave, um diálogo e uma explicação de como o idioma funciona.
+const COMPLEMENTOS = {};
+const NOVAS_UNIDADES = [];
+
 const AVATARES = [
   { e: "🦊", preco: 0 }, { e: "🐼", preco: 30 }, { e: "🐸", preco: 30 }, { e: "🐨", preco: 40 },
   { e: "🦁", preco: 60 }, { e: "🐙", preco: 60 }, { e: "🦄", preco: 100 }, { e: "🐲", preco: 150 },
