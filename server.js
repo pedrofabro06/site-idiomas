@@ -17,7 +17,12 @@ const RAIZ = path.dirname(fileURLToPath(import.meta.url));
 const MODELO = process.env.AI_MODEL || "claude-haiku-5-5";
 const LIMITE = Number(process.env.AI_LIMITE || 60);          // pedidos por pessoa...
 const JANELA_MS = 15 * 60 * 1000;                             // ...a cada 15 minutos
-const cliente = process.env.ANTHROPIC_API_KEY ? new Anthropic() : null;
+// Chaves criadas fora de um workspace precisam do ID do workspace em cada pedido
+// (variável ANTHROPIC_WORKSPACE_ID no Railway). Chaves criadas dentro de um workspace não precisam.
+const WORKSPACE = (process.env.ANTHROPIC_WORKSPACE_ID || "").trim();
+const cliente = process.env.ANTHROPIC_API_KEY
+  ? new Anthropic(WORKSPACE ? { defaultHeaders: { "anthropic-workspace-id": WORKSPACE } } : {})
+  : null;
 
 // Modelos que aceitam o "fallback" automático do servidor quando um pedido é recusado
 const ACEITA_FALLBACK = new Set(["claude-fable-5-1", "claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5"]);
@@ -123,10 +128,16 @@ async function perguntarClaude({ system, messages, effort, formato, maxTokens = 
 }
 function erroAmigavel(erro) {
   if (erro.status === 422) return [422, erro.message];
+  // Mensagem original da Anthropic (ajuda a descobrir o motivo de um erro 400)
+  const detalhe = String(erro?.error?.error?.message || erro?.message || "");
+  if (/not scoped to a workspace|anthropic-workspace-id/i.test(detalhe)) return [500, "A chave da API foi criada fora de um workspace. Crie uma chave dentro de um workspace no console da Anthropic, ou coloque o ID do workspace na variável ANTHROPIC_WORKSPACE_ID no Railway."];
+  if (/credit balance|billing|purchase credits/i.test(detalhe)) return [402, "A conta da Anthropic está sem créditos. Adicione créditos em console.anthropic.com, no menu Billing, e tente de novo em alguns minutos."];
+  if (/model/i.test(detalhe) && /not found|does not exist|not available|access/i.test(detalhe)) return [502, `Sua conta da Anthropic não tem acesso ao modelo ${MODELO}. Troque a variável AI_MODEL no Railway. Detalhe: ${detalhe}`];
   if (erro instanceof Anthropic.RateLimitError) return [429, "A IA está muito ocupada agora. Tente de novo em alguns segundos."];
-  if (erro instanceof Anthropic.AuthenticationError) return [500, "A chave da IA no servidor é inválida."];
+  if (erro instanceof Anthropic.AuthenticationError) return [500, "A chave da IA no servidor é inválida. Confira a variável ANTHROPIC_API_KEY no Railway."];
+  if (erro instanceof Anthropic.PermissionDeniedError) return [500, "A chave da IA não tem permissão para isso. Confira a chave e o workspace no console da Anthropic."];
   if (erro instanceof Anthropic.APIConnectionError) return [502, "Não consegui falar com a IA. Verifique a conexão do servidor."];
-  if (erro instanceof Anthropic.APIError) return [502, "A IA teve um problema (" + erro.status + "). Tente de novo."];
+  if (erro instanceof Anthropic.APIError) return [502, `A IA recusou o pedido (erro ${erro.status}): ${detalhe.slice(0, 300)}`];
   return [500, "Algo deu errado no servidor."];
 }
 
@@ -245,8 +256,8 @@ http.createServer(async (req, res) => {
     responderJSON(res, 404, { erro: "Rota não encontrada." });
   } catch (erro) {
     if (erro.message === "grande" || erro.message === "json") return responderJSON(res, 400, { erro: "Pedido inválido." });
-    console.error("Erro na IA:", erro.status || "", erro.message);
+    console.error("Erro na IA:", erro.status || "", erro?.error?.error?.message || erro.message);
     const [status, msg] = erroAmigavel(erro);
     responderJSON(res, status, { erro: msg });
   }
-}).listen(PORT, () => console.log(`Poliglota na porta ${PORT} · IA ${cliente ? "ligada (" + MODELO + ")" : "desligada"}`));
+}).listen(PORT, () => console.log(`Poliglota na porta ${PORT} · IA ${cliente ? "ligada (" + MODELO + ")" + (WORKSPACE ? " · workspace " + WORKSPACE : "") : "desligada"}`));
