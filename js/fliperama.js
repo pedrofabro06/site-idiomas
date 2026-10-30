@@ -8,16 +8,24 @@ const JOGOS = [
   { id: "turbo", nome: "Pares Turbo", icone: "🏎️", desc: "Ligue o máximo de pares que conseguir em 45 segundos.", cor: ["#EC4899", "#8B5CF6"], fn: () => jogoTurbo(), pro: true },
 ];
 
+// Palavras dos jogos: tudo o que já foi liberado + todas as unidades até o nível do aluno
+// (muito mais variedade). Só entram palavras curtas: nada de frases ou expressões longas.
 function poolFliperama() {
-  const lib = TEMAS.filter((t, i) => temaDesbloqueado(i));
-  const temas = lib.length >= 2 ? lib : TEMAS.slice(0, 2);
+  const ate = ORDEM_NIVEIS.indexOf(nivelAtual());
+  const temas = TEMAS.filter((t, i) => temaDesbloqueado(i) || ORDEM_NIVEIS.indexOf(t.nivel) <= ate);
+  const curta = w => {
+    const a = alvo(w.p), pt = w.p[0];
+    return a.length <= 13 && pt.length <= 16 && a.split(" ").length <= 2 && !/[.…?!]/.test(a + pt);
+  };
   const vistos = new Set();
-  return temas.flatMap(palavrasDoTema).filter(w => {
+  const lista = temas.flatMap(palavrasDoTema).filter(w => {
+    if (!curta(w)) return false;
     const k = normalizar(alvo(w.p)), k2 = normalizar(w.p[0]);
     if (vistos.has(k) || vistos.has("pt:" + k2)) return false;
     vistos.add(k); vistos.add("pt:" + k2);
     return true;
   });
+  return lista.length >= 12 ? lista : TEMAS.slice(0, 4).flatMap(palavrasDoTema).filter(curta);
 }
 
 function cabecalhoJogo(jogo, hud) {
@@ -93,14 +101,17 @@ function jogoChuva() {
   const tec = tecladoEspecial(input);
   if (tec) $(".jogo-entrada").appendChild(tec);
   let pontos = 0, vidas = 3, vivo = false, gotas = [], ultimo = 0, t0 = 0, antes = 0;
+  const recentes = [];
 
   const sair = () => { vivo = false; ir("fliperama"); };
   $("#jSair").onclick = sair;
 
   function criar() {
-    const naTela = new Set(gotas.map(g => g.w));
-    const opcoes = pool.filter(w => !naTela.has(w));
+    const evitar = new Set([...gotas.map(g => g.w), ...recentes]);
+    const opcoes = pool.filter(w => !evitar.has(w));
     const w = umDe(opcoes.length ? opcoes : pool);
+    recentes.push(w);
+    if (recentes.length > Math.min(20, Math.floor(pool.length / 2))) recentes.shift();
     const d = el(`<div class="gota"><span class="gota-emoji">${w.p[6]}</span><span>${esc(w.p[0])}</span><small></small></div>`);
     arena.appendChild(d);
     const x = 8 + Math.random() * Math.max(10, arena.clientWidth - d.offsetWidth - 16);
@@ -112,14 +123,16 @@ function jogoChuva() {
     const dt = Math.min(0.05, (t - antes) / 1000);
     antes = t;
     const s = (t - t0) / 1000;
-    const vel = 36 + s * 1.5 + pontos * 0.8;
-    const intervalo = Math.max(950, 2600 - s * 22);
-    if (t - ultimo > intervalo) { criar(); ultimo = t; }
+    // Começa devagar e acelera pouco (no máximo 4 palavras na tela ao mesmo tempo)
+    const vel = Math.min(60, 20 + s * 0.35 + pontos * 0.6);
+    const intervalo = Math.max(2000, 3600 - s * 12 - pontos * 20);
+    if (t - ultimo > intervalo && gotas.length < 4) { criar(); ultimo = t; }
     const H = arena.clientHeight;
     for (const g of gotas) {
       g.y += vel * dt;
       g.d.style.transform = `translate(${g.x}px, ${g.y}px)`;
-      if (!g.dica && g.y > H * 0.5) { g.dica = true; $("small", g.d).textContent = alvo(g.w.p).slice(0, 2) + "…"; }
+      if (!g.dica && g.y > H * 0.4) { g.dica = true; $("small", g.d).textContent = alvo(g.w.p).slice(0, 2) + "…"; }
+      if (g.dica === true && g.y > H * 0.65) { g.dica = 2; $("small", g.d).textContent = alvo(g.w.p).slice(0, Math.ceil(alvo(g.w.p).length / 2)) + "…"; }
       if (g.y > H - g.d.offsetHeight) {
         g.morta = true;
         g.d.classList.add("caiu");
@@ -149,7 +162,14 @@ function jogoChuva() {
       input.value = "";
     }
   };
-  input.onkeydown = e => { if (e.key === "Enter") { if (input.value) { tremer(input); input.value = ""; } } };
+  // Enter aceita um errinho de digitação em palavras maiores
+  input.onkeydown = e => {
+    if (e.key !== "Enter" || !input.value) return;
+    const v = normalizar(input.value);
+    const g = gotas.find(x => x.alvo.length >= 5 && similaridade(v, x.alvo) >= 0.8);
+    if (g) { input.value = g.alvo; input.oninput(); return; }
+    tremer(input); input.value = "";
+  };
   teclas = e => { if (e.key === "Escape") sair(); };
   contagem(arena, () => {
     vivo = true;
