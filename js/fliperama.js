@@ -13,9 +13,10 @@ const JOGOS = [
 function poolFliperama() {
   const ate = ORDEM_NIVEIS.indexOf(nivelAtual());
   const temas = TEMAS.filter((t, i) => temaDesbloqueado(i) || ORDEM_NIVEIS.indexOf(t.nivel) <= ate);
+  // Só palavra única nos dois idiomas, com tradução direta (nada de expressões ou frases)
   const curta = w => {
     const a = alvo(w.p), pt = w.p[0];
-    return a.length <= 13 && pt.length <= 16 && a.split(" ").length <= 2 && !/[.…?!]/.test(a + pt);
+    return a.length <= 12 && pt.length <= 12 && !/[\s.…?!,'’]/.test(a) && !/[\s.…?!,]/.test(pt);
   };
   const vistos = new Set();
   const lista = temas.flatMap(palavrasDoTema).filter(w => {
@@ -90,7 +91,7 @@ function contagem(area, aoTerminar) {
 function jogoChuva() {
   const jogo = JOGOS[0];
   const pool = poolFliperama();
-  render(`<div class="jogo">
+  render(`<div class="jogo jogo-chuva">
     ${cabecalhoJogo(jogo, `<span>⭐ <b id="jPontos">0</b></span><span id="jVidas">❤️❤️❤️</span>`)}
     <div class="arena" id="arena"></div>
     <div class="jogo-entrada">
@@ -98,10 +99,22 @@ function jogoChuva() {
     </div>
   </div>`);
   const arena = $("#arena"), input = $("#jInput");
+  // Celular: o jogo ocupa só a área visível acima do teclado, sem a página pular
+  const vv = window.visualViewport;
+  const ajustarTela = () => {
+    if (!document.body.contains(arena)) { vv && vv.removeEventListener("resize", ajustarTela); vv && vv.removeEventListener("scroll", ajustarTela); return; }
+    const raiz = document.documentElement.style;
+    raiz.setProperty("--vv-altura", (vv ? vv.height : innerHeight) + "px");
+    raiz.setProperty("--vv-topo", (vv ? vv.offsetTop : 0) + "px");
+  };
+  ajustarTela();
+  if (vv) { vv.addEventListener("resize", ajustarTela); vv.addEventListener("scroll", ajustarTela); }
+  input.addEventListener("focus", () => setTimeout(() => { window.scrollTo(0, 0); ajustarTela(); }, 50));
   const tec = tecladoEspecial(input);
   if (tec) $(".jogo-entrada").appendChild(tec);
   let pontos = 0, vidas = 3, vivo = false, gotas = [], ultimo = 0, t0 = 0, antes = 0;
   const recentes = [];
+  let alturaAntes = 0;
 
   const sair = () => { vivo = false; ir("fliperama"); };
   $("#jSair").onclick = sair;
@@ -128,6 +141,9 @@ function jogoChuva() {
     const intervalo = Math.max(2000, 3600 - s * 12 - pontos * 20);
     if (t - ultimo > intervalo && gotas.length < 4) { criar(); ultimo = t; }
     const H = arena.clientHeight;
+    // Se a arena mudar de tamanho (teclado do celular abrindo), as palavras acompanham sem cair de repente
+    if (alturaAntes && H !== alturaAntes) gotas.forEach(g => { g.y *= H / alturaAntes; });
+    alturaAntes = H;
     for (const g of gotas) {
       g.y += vel * dt;
       g.d.style.transform = `translate(${g.x}px, ${g.y}px)`;

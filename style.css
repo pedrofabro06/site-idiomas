@@ -1718,3 +1718,21 @@ img.em { width: 1.08em; height: 1.08em; vertical-align: -0.16em; }
 /* Chuva de palavras: quadrinhos compactos */
 .gota { white-space: normal; max-width: 46%; text-align: center; padding: 6px 12px; font-size: .95rem; line-height: 1.2; }
 .gota-emoji { font-size: 1.3rem; }
+
+/* Chuva de palavras no celular: tela fixa do tamanho da área visível (acima do teclado) */
+@media (max-width: 860px) {
+  body.em-jogo:has(.jogo-chuva) { overflow: hidden; }
+  .jogo-chuva {
+    position: fixed; left: 0; right: 0; top: var(--vv-topo, 0px); height: var(--vv-altura, 100dvh); z-index: 20;
+    display: flex; flex-direction: column; padding: 10px 12px calc(8px + env(safe-area-inset-bottom)); background: var(--fundo);
+  }
+  .jogo-chuva .jogo-topo { margin-bottom: 8px; flex-shrink: 0; }
+  .jogo-chuva .jogo-nome { font-size: 1.05rem; white-space: nowrap; }
+  .jogo-chuva .hud { gap: 10px; font-size: 1rem; }
+  .jogo-chuva .arena { flex: 1; height: auto; min-height: 0; border-radius: 18px; }
+  .jogo-chuva .jogo-entrada { margin-top: 8px; flex-shrink: 0; }
+  .jogo-chuva .jogo-entrada .campo { font-size: 16px; padding: 12px 14px; }
+  .jogo-chuva .teclado-especial { margin-top: 6px; }
+  .jogo-chuva .gota { padding: 5px 10px; font-size: .88rem; max-width: 42%; }
+  .jogo-chuva .gota-emoji { font-size: 1.1rem; }
+}
