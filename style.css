@@ -1709,3 +1709,8 @@ img.em { width: 1.08em; height: 1.08em; vertical-align: -0.16em; }
   .intro-emoji { font-size: 4.6rem; }
 }
 .item-loja .btn { padding: 8px 14px; font-size: .95rem; }
+
+/* Dica de voz no iPhone */
+.dica-voz { background: var(--cartao-2); border-radius: 14px; padding: 12px 14px; margin: 4px 0 10px; font-size: .9rem; line-height: 1.5; }
+.dica-voz p { margin: 4px 0 0; color: var(--suave); }
+.dica-voz p b { color: var(--texto); }

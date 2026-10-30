@@ -97,22 +97,40 @@ function som(tipo) {
 }
 
 // ---------- Voz (pronúncia) ----------
-// Todas as vozes instaladas para um idioma (as "Natural"/"Online" soam mais humanas)
+// Vozes de brincadeira ou robóticas que o iPhone e o Mac trazem: nunca usar
+const VOZES_RUINS = /\b(albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|junior|ralph|kathy|fred|eddy|flo|grandma|grandpa|reed|rocko|sandy|shelley|vicki|victoria|princess|deranged|hysterical|pipe organ)\b/i;
+// Vozes da Apple que soam naturais (as versões "Premium"/"Melhorada" são ainda melhores)
+const VOZES_BOAS = /\b(samantha|ava|allison|evan|nathan|joelle|susan|zoe|tom|noelle|daniel|kate|serena|arthur|oliver|karen|moira|tessa|m[oó]nica|jorge|marisol|paulina|juan|thomas|am[eé]lie|audrey|aur[eé]lie|alice|federica|luca|paola|anna|markus|petra|yannick|helena|viktor)\b/i;
+// Nota de qualidade de uma voz (-1 = descartar)
+function notaVoz(v, lang) {
+  const id = (v.name + " " + (v.voiceURI || "")).toLowerCase();
+  if (VOZES_RUINS.test(v.name) || /eloquence|speech\.synthesis\.voice\./.test(id)) return -1;
+  let n = 0;
+  if (/premium/.test(id)) n += 100;
+  else if (/enhanced|melhorada|aprimorada|neural/.test(id)) n += 80;
+  if (/natural|online/.test(id)) n += 70;
+  if (/google/.test(id)) n += 50;
+  if (VOZES_BOAS.test(v.name)) n += 40;
+  if (v.lang.replace("_", "-") === lang) n += 10;
+  return n;
+}
+// Todas as vozes boas instaladas para um idioma, da melhor para a pior
 function vozesDoIdioma(idioma) {
   if (!("speechSynthesis" in window)) return [];
-  const prefixo = IDIOMAS[idioma].voz.slice(0, 2);
+  const lang = IDIOMAS[idioma].voz, prefixo = lang.slice(0, 2);
   return speechSynthesis.getVoices()
-    .filter(v => v.lang.replace("_", "-").toLowerCase().startsWith(prefixo))
-    .sort((a, b) => (/Natural|Online|Google/i.test(b.name) ? 1 : 0) - (/Natural|Online|Google/i.test(a.name) ? 1 : 0));
+    .filter(v => v.lang.replace("_", "-").toLowerCase().startsWith(prefixo) && notaVoz(v, lang) >= 0)
+    .sort((a, b) => notaVoz(b, lang) - notaVoz(a, lang));
 }
 function vozPara(lang, idioma) {
   const vs = speechSynthesis.getVoices();
   const escolhida = idioma && E.vozes && E.vozes[idioma];
   if (escolhida) { const v = vs.find(x => x.name === escolhida); if (v) return v; }
-  return vs.find(v => v.lang === lang && /Natural|Online|Google/i.test(v.name))
-    || vs.find(v => v.lang === lang)
-    || vs.find(v => v.lang.replace("_", "-").startsWith(lang.slice(0, 2)));
+  if (idioma) { const melhor = vozesDoIdioma(idioma)[0]; if (melhor) return melhor; }
+  return vs.find(v => v.lang === lang && notaVoz(v, lang) >= 0)
+    || vs.find(v => v.lang.replace("_", "-").startsWith(lang.slice(0, 2)) && notaVoz(v, lang) >= 0);
 }
+const ehIphone = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 function falar(texto, lento = false, idioma = E.idioma) {
   if (!("speechSynthesis" in window) || !idioma || !texto) return;
   speechSynthesis.cancel();

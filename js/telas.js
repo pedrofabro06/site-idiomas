@@ -698,7 +698,9 @@ function telaPerfil() {
           <select class="campo pequeno" id="pVoz"></select>
           <label class="vel">🐢 <input type="range" id="pVel" min="0.6" max="1.3" step="0.05" value="${E.velocidade || 1}"> 🐇</label>
           <button class="btn secundario pequeno" id="pTestar">🔊 Testar</button>
-        </div></div>` : ""}
+        </div></div>
+      ${ehIphone ? `<div class="dica-voz"><b>Voz mais natural no iPhone</b>
+        <p>O iPhone tem vozes bem mais humanas, mas elas precisam ser baixadas uma vez: abra <b>Ajustes › Acessibilidade › Conteúdo Falado › Vozes</b>, toque em <b>${IDIOMAS[E.idioma].nome}</b> e baixe uma voz <b>Premium</b> ou <b>Melhorada</b> (por exemplo ${{ en: "Ava ou Zoe", es: "Mónica ou Marisol", fr: "Amélie ou Audrey", it: "Alice ou Federica", de: "Anna ou Helena" }[E.idioma]}). Depois feche o Safari e abra o site de novo: ela é escolhida sozinha.</p></div>` : ""}` : ""}
       <div class="cfg-linha"><div><b>Efeitos sonoros</b><small>Sons de acerto, erro e recompensas</small></div>
         <button class="interruptor ${E.som ? "on" : ""}" id="pSom" aria-label="Som"><span></span></button></div>
       <div class="cfg-linha"><div><b>Apagar progresso</b><small>Zera XP, moedas, trilhas e conquistas</small></div>
@@ -722,7 +724,7 @@ function telaPerfil() {
       const vozes = vozesDoIdioma(E.idioma);
       const atual = E.vozes[E.idioma] || "";
       sel.innerHTML = `<option value="">Automática (a melhor disponível)</option>` + vozes.map(v =>
-        `<option value="${esc(v.name)}" ${v.name === atual ? "selected" : ""}>${esc(v.name.replace(/^Microsoft |^Google /, ""))} · ${v.lang}${/Natural|Online/i.test(v.name) ? " ⭐" : ""}</option>`).join("");
+        `<option value="${esc(v.name)}" ${v.name === atual ? "selected" : ""}>${esc(v.name.replace(/^Microsoft |^Google /, ""))} · ${v.lang}${notaVoz(v, IDIOMAS[E.idioma].voz) >= 60 ? " ⭐" : ""}</option>`).join("");
       if (!vozes.length) sel.innerHTML = `<option value="">Nenhuma voz deste idioma instalada no seu aparelho</option>`;
     };
     preencher();
